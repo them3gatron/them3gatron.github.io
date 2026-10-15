@@ -1,4 +1,4 @@
-# Megatron — Independent Security Research
+# Megatron
 
 Security research by [@TheM3gatr0n](https://x.com/TheM3gatr0n).
 
