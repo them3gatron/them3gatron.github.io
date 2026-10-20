@@ -1,52 +1,60 @@
-# Megatron
+M3GATR0N
 
-Security research by [@TheM3gatr0n](https://x.com/TheM3gatr0n).
+Independent security researcher focused on threat actor infrastructure hunting,
+adversary tracking, and offensive platform analysis.
 
----
-
-## Operation CAIRN
-
-**Published: October 2026**
-
-First documented case of a fully autonomous AI-driven intrusion platform
-operating at scale against real enterprise targets.
-
-Key findings:
-
-- 85+ victim organisations targeted across US, Taiwan, and Europe
-- 229,828 AI-generated attack sessions across 13 days
-- Custom platform (Cairn) using DeepSeek v4.1-flash via stolen ClinePass subscriptions
-- Victims span e-commerce, digital health media, automotive finance, and SaaS
-- Confirmed RCE via ShellShock on Taiwanese messaging infrastructure
-- Live reverse shell active in a GCP Kubernetes cluster at time of discovery
-- Chinese-speaking operator, unattributed, working name: UNC-CAIRN
-
-[Read the full report](https://them3gatron.github.io)
+My work involves routine hunting across internet-facing infrastructure to identify
+active threat actor operations, novel attack tooling, and campaigns in progress.
+Findings are published here when the research is complete and responsible disclosure
+obligations have been met.
 
 ---
 
-## IOC Requests
+Research
 
-Verified threat intelligence vendors and CERT teams can request the full
-restricted IOC package (network indicators, certificate hashes, file hashes)
+Operation CAIRN
+**Published:** October 2026 &nbsp;·&nbsp; APT &nbsp;·&nbsp; AI-Driven Intrusion
+
+First documented autonomous AI intrusion platform operating at scale against
+real enterprise targets. 85+ victims across US, Taiwan, and Europe.
+Chinese-speaking operator, working name UNC-CAIRN.
+
+[Read the full report](https://them3gatron.github.io/cairn/)
+
+---
+
+IOC Requests
+
+Verified threat intelligence vendors and CERT teams can request restricted IOC
+packages (network indicators, certificate hashes, file hashes, credential material)
 by contacting [@TheM3gatr0n](https://x.com/TheM3gatr0n) on X.
 
 Credit is required on any publication that builds on this research.
 
 ---
 
-## License
+License
 
-This research is published under CC BY 4.0 with an AI Systems Restriction.
+All research published in this repository is licensed under
+**CC BY 4.0 with an AI Systems Restriction** — see [LICENSE.md](./LICENSE.md).
 
-You may share and adapt this work with attribution.
-Training AI or LLM models on this content is prohibited without written
-permission. See [LICENSE.md](./LICENSE.md) for full terms.
+Short version: you can share and adapt this work for any purpose including
+commercially, as long as you credit M3GATR0N (@TheM3gatr0n). Training AI or
+machine learning models on this content is prohibited without written permission.
 
 ---
 
-## About
+About
 
-Independent security researcher. All findings in this repository were
-obtained through passive observation of publicly accessible infrastructure.
-No systems were accessed without authorisation.
+I am an independent security researcher. My primary focus areas are:
+
+- Threat actor infrastructure identification and tracking
+- Autonomous and AI-driven offensive tooling analysis
+- IOC development and pivot methodology
+- Adversary tradecraft documentation
+
+All findings published here were obtained through passive observation of publicly
+accessible infrastructure. Research is shared to help defenders, security teams,
+and the broader threat intelligence community.
+
+Contact: [@TheM3gatr0n](https://x.com/TheM3gatr0n) on X
