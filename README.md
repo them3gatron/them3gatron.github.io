@@ -10,29 +10,6 @@ obligations have been met.
 
 ---
 
-Research
-
-Operation CAIRN
-**Published:** October 2026 &nbsp;·&nbsp; APT &nbsp;·&nbsp; AI-Driven Intrusion
-
-First documented autonomous AI intrusion platform operating at scale against
-real enterprise targets. 85+ victims across US, Taiwan, and Europe.
-Chinese-speaking operator, working name UNC-CAIRN.
-
-[Read the full report](https://them3gatron.github.io/cairn/)
-
----
-
-IOC Requests
-
-Verified threat intelligence vendors and CERT teams can request restricted IOC
-packages (network indicators, certificate hashes, file hashes, credential material)
-by contacting [@TheM3gatr0n](https://x.com/TheM3gatr0n) on X.
-
-Credit is required on any publication that builds on this research.
-
----
-
 License
 
 All research published in this repository is licensed under
