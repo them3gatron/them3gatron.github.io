@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#080b0d">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Technical analysis of the CWPdoor Linux delivery stager, including Control Web Panel binary replacement, timestomping, container checks, cleanup, passive HTTP activation, and recovered indicators.">
+  <link rel="canonical" href="https://them3gatron.github.io/cwpdoor/">
+
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="M3GATR0N">
+  <meta property="og:title" content="CWPdoor Linux Backdoor Delivery Stager | M3GATR0N">
+  <meta property="og:description" content="Technical analysis of a Linux shell stager that replaces the Control Web Panel daemon with a passive HTTP backdoor, restores timestamps, and removes staging artefacts.">
+  <meta property="og:url" content="https://them3gatron.github.io/cwpdoor/">
+  <meta property="og:image" content="https://them3gatron.github.io/assets/cwpdoor-preview.jpg">
+  <meta property="og:image:secure_url" content="https://them3gatron.github.io/assets/cwpdoor-preview.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="CWPdoor Linux Backdoor Stager technical report by M3GATR0N">
+  <meta property="article:published_time" content="2026-11-13T00:00:00+05:30">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="CWPdoor Linux Backdoor Delivery Stager | M3GATR0N">
+  <meta name="twitter:description" content="Control Web Panel binary replacement, timestomping, container checks, passive HTTP activation, and recovered indicators.">
+  <meta name="twitter:image" content="https://them3gatron.github.io/assets/cwpdoor-preview.jpg">
+  <meta name="twitter:image:alt" content="CWPdoor Linux Backdoor Stager technical report by M3GATR0N">
+
+  <title>CWPdoor Linux Backdoor Delivery Stager | M3GATR0N</title>
+  <style>
+    :root{
+      --bg:#080b0d;--bg2:#0d1114;--panel:#10161a;--panel2:#141c21;--line:#27343b;
+      --text:#edf3f5;--muted:#91a1aa;--orange:#ff5a1f;--amber:#ffb02e;--cyan:#42dce8;
+      --green:#62e5a7;--red:#ff5c6d;--mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+      --sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      --max:1240px;--ease:cubic-bezier(.22,.8,.2,1)
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth;scroll-padding-top:86px}
+    body{margin:0;color:var(--text);background:
+      radial-gradient(circle at 88% 4%,rgba(255,90,31,.11),transparent 30rem),
+      radial-gradient(circle at 6% 35%,rgba(66,220,232,.06),transparent 28rem),var(--bg);
+      font:15px/1.7 var(--sans);overflow-x:hidden}
+    body::before{content:"";position:fixed;inset:0;z-index:40;pointer-events:none;opacity:.15;
+      background:repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0,rgba(255,255,255,.025) 1px,transparent 1px,transparent 4px)}
+    ::selection{background:var(--orange);color:#150500}
+    a{color:inherit;text-decoration:none} code,pre,.mono{font-family:var(--mono)}
+    code{color:#ffd3bf} .wrap{width:min(calc(100% - 36px),var(--max));margin-inline:auto}
+    .topbar{position:sticky;top:0;z-index:30;border-bottom:1px solid rgba(255,90,31,.18);background:rgba(8,11,13,.82);backdrop-filter:blur(18px)}
+    .topbar-inner{height:70px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+    .brand{font:850 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;display:flex;align-items:center;gap:11px}
+    .brand i{width:11px;height:11px;border:2px solid var(--orange);transform:rotate(45deg);box-shadow:0 0 18px rgba(255,90,31,.45)}
+    .back{color:var(--muted);font:750 10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;padding:10px 12px;border:1px solid var(--line)}
+    .back:hover{border-color:var(--orange);color:var(--orange)}
+
+    .hero{position:relative;min-height:760px;display:grid;align-items:center;overflow:hidden;border-bottom:1px solid var(--line);padding:84px 0 72px}
+    .hero::before{content:"";position:absolute;inset:0;background:
+      linear-gradient(90deg,rgba(8,11,13,.99) 0%,rgba(8,11,13,.96) 52%,rgba(8,11,13,.38) 78%,rgba(8,11,13,.78) 100%),
+      url("../assets/cwpdoor-preview.jpg") center/cover no-repeat;filter:saturate(.88)}
+    .hero::after{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(66,220,232,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(66,220,232,.045) 1px,transparent 1px);background-size:52px 52px;mask-image:linear-gradient(90deg,#000,transparent 75%)}
+    .hero-content{position:relative;z-index:2;max-width:900px}
+    .kicker{display:flex;align-items:center;gap:12px;color:var(--orange);font:800 11px/1.4 var(--mono);letter-spacing:.15em;text-transform:uppercase}
+    .kicker::before{content:"";width:40px;height:1px;background:var(--orange)}
+    h1{font:900 clamp(54px,8.5vw,118px)/.82 var(--sans);letter-spacing:-.07em;text-transform:uppercase;margin:28px 0 25px;max-width:960px}
+    h1 span{display:block;color:transparent;-webkit-text-stroke:1px rgba(237,243,245,.52)}
+    .lede{font-size:clamp(17px,2vw,22px);line-height:1.55;color:#c2cdd2;max-width:780px;margin:0}
+    .hero-meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:rgba(39,52,59,.9);border:1px solid rgba(39,52,59,.9);margin-top:48px;max-width:980px}
+    .meta{padding:18px;background:rgba(8,11,13,.86);backdrop-filter:blur(8px)}
+    .meta-label{color:var(--muted);font:750 9px/1.3 var(--mono);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+    .meta-value{font:760 13px/1.45 var(--mono)} .meta-value.hot{color:var(--orange)}
+
+    .toc-wrap{border-bottom:1px solid var(--line);background:#0a0e10}
+    .toc{display:flex;align-items:center;gap:8px;overflow-x:auto;padding:14px 0;scrollbar-width:none}.toc::-webkit-scrollbar{display:none}
+    .toc a{white-space:nowrap;padding:8px 11px;border:1px solid transparent;color:var(--muted);font:700 9px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase}
+    .toc a:hover{border-color:var(--line);color:var(--orange)}
+
+    main{position:relative}.section{padding:90px 0;border-bottom:1px solid var(--line)}
+    .section-head{display:grid;grid-template-columns:145px minmax(0,1fr);gap:34px;align-items:start;margin-bottom:42px}
+    .section-no{color:var(--orange);font:800 10px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;padding-top:10px}
+    h2{font:850 clamp(36px,5vw,68px)/1 var(--sans);letter-spacing:-.045em;margin:0;max-width:900px}
+    h3{font:800 20px/1.25 var(--sans);letter-spacing:-.02em;margin:0 0 12px}
+    p{margin:0 0 18px}.copy{color:var(--muted);max-width:900px;font-size:16px}
+    .callout{border-left:3px solid var(--orange);background:linear-gradient(90deg,rgba(255,90,31,.1),transparent);padding:19px 22px;margin-top:28px;color:#cbd5d9}
+    .callout strong{color:var(--orange)}
+
+    .findings{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .finding{position:relative;min-height:220px;border:1px solid var(--line);background:linear-gradient(145deg,var(--panel2),var(--panel));padding:24px;overflow:hidden}
+    .finding::after{content:attr(data-n);position:absolute;right:-8px;bottom:-30px;color:rgba(255,90,31,.045);font:900 130px/1 var(--mono)}
+    .finding-label{color:var(--orange);font:800 9px/1 var(--mono);letter-spacing:.12em;margin-bottom:42px}.finding p{color:var(--muted);font-size:13px;position:relative;z-index:2;margin:0}
+
+    .profile{display:grid;grid-template-columns:.82fr 1.18fr;gap:18px}
+    .panel{border:1px solid var(--line);background:var(--panel);padding:26px}
+    .profile-list{display:grid;gap:0}.profile-row{display:grid;grid-template-columns:150px 1fr;gap:18px;padding:14px 0;border-bottom:1px solid var(--line)}.profile-row:last-child{border-bottom:0}
+    .profile-row dt{color:var(--muted);font:750 9px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase}.profile-row dd{margin:0;font:650 13px/1.55 var(--mono);overflow-wrap:anywhere}
+    .hashbox{border:1px solid var(--line);background:#090d0f;padding:17px;margin-top:18px}.hashbox span{display:block;color:var(--muted);font:750 9px/1 var(--mono);letter-spacing:.09em;text-transform:uppercase;margin-bottom:9px}.hashbox code{overflow-wrap:anywhere;font-size:12px}
+
+    .chain{display:grid;gap:1px;background:var(--line);border:1px solid var(--line)}
+    .step{display:grid;grid-template-columns:86px 1fr;background:var(--panel);min-height:128px;transition:background .25s}
+    .step:hover{background:#151d21}.step-no{display:grid;place-items:center;border-right:1px solid var(--line);color:var(--orange);font:900 24px/1 var(--mono)}
+    .step-body{padding:25px 28px}.step-body p{color:var(--muted);margin:0;max-width:900px}
+
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px}.signal{border:1px solid var(--line);background:var(--panel);padding:26px;position:relative;overflow:hidden}
+    .signal::before{content:"";position:absolute;left:0;top:0;width:100%;height:2px;background:linear-gradient(90deg,var(--cyan),transparent)}
+    .signal.orange::before{background:linear-gradient(90deg,var(--orange),transparent)}.signal p{color:var(--muted);margin:0}
+    .packet{margin-top:18px;border:1px solid var(--line);background:#080c0e;padding:18px;color:#b9c8ce;font:12px/1.8 var(--mono);overflow:auto}.packet b{color:var(--cyan)}.packet em{color:var(--orange);font-style:normal}
+
+    .code-panel{border:1px solid var(--line);background:#080c0e;margin:24px 0 42px;overflow:hidden}
+    .code-head{display:flex;justify-content:space-between;gap:20px;align-items:center;padding:12px 15px;border-bottom:1px solid var(--line);background:#11171a}
+    .code-title{color:var(--muted);font:750 9px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase}
+    .copy-btn{border:1px solid var(--line);background:transparent;color:var(--muted);padding:7px 9px;font:700 9px/1 var(--mono);text-transform:uppercase;cursor:pointer}.copy-btn:hover{border-color:var(--orange);color:var(--orange)}
+    pre{margin:0;padding:22px;overflow:auto;color:#b9c8ce;font-size:12px;line-height:1.75}.cmd{color:#ffd3bf}.var{color:var(--cyan)}.comment{color:#687980}
+
+    .tech-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.tech{border:1px solid var(--line);background:var(--panel);padding:24px}.tech-tag{color:var(--amber);font:800 9px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px}.tech p{color:var(--muted);margin:0}
+
+    .table-wrap{overflow-x:auto;border:1px solid var(--line);margin-bottom:32px}table{width:100%;border-collapse:collapse;min-width:760px;background:var(--panel)}
+    th,td{text-align:left;padding:14px 16px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--orange);font:800 9px/1.3 var(--mono);letter-spacing:.1em;text-transform:uppercase;background:#0d1215}td{color:#b9c5ca;font-size:13px}td code{font-size:12px;overflow-wrap:anywhere}.ioc-type{color:var(--muted);font:750 10px/1.4 var(--mono);text-transform:uppercase}.table-wrap tr:last-child td{border-bottom:0}
+    .note{color:var(--muted);font-size:13px}.note strong{color:var(--cyan)}
+
+    .attack-line{display:flex;align-items:stretch;gap:8px;overflow-x:auto;padding-bottom:12px}.attack-node{min-width:170px;flex:1;border:1px solid var(--line);background:var(--panel);padding:20px}.attack-node b{display:block;color:var(--orange);font:800 9px/1 var(--mono);letter-spacing:.1em;margin-bottom:12px}.attack-node span{font:750 13px/1.45 var(--mono)}.arrow{align-self:center;color:var(--orange);font:900 20px/1 var(--mono)}
+
+    footer{padding:34px 0 48px;color:var(--muted);font:700 9px/1.6 var(--mono);letter-spacing:.07em;text-transform:uppercase}.foot{display:flex;justify-content:space-between;gap:22px;border-top:1px solid var(--line);padding-top:24px}.foot a:hover{color:var(--orange)}
+    .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s var(--ease),transform .7s var(--ease)}.reveal.in{opacity:1;transform:none}
+    @media(max-width:960px){.hero-meta,.findings{grid-template-columns:1fr 1fr}.profile,.split{grid-template-columns:1fr}.section-head{grid-template-columns:1fr;gap:12px}.section-no{padding:0}.tech-grid{grid-template-columns:1fr}.hero::before{background:linear-gradient(90deg,rgba(8,11,13,.98),rgba(8,11,13,.84)),url("../assets/cwpdoor-preview.jpg") center/cover no-repeat}}
+    @media(max-width:620px){.wrap{width:min(calc(100% - 24px),var(--max))}.hero{min-height:auto;padding:70px 0 55px}.hero-meta,.findings{grid-template-columns:1fr}.meta{padding:15px}.section{padding:68px 0}.step{grid-template-columns:58px 1fr}.step-body{padding:21px 18px}.profile-row{grid-template-columns:1fr;gap:6px}.attack-line{display:grid}.arrow{display:none}.foot{flex-direction:column}h1{font-size:clamp(48px,18vw,78px)}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="../"><i aria-hidden="true"></i>M3GATR0N/Researcher</a>
+      <a class="back" href="../#research">← Research archive</a>
+    </div>
+  </header>
+
+  <section class="hero" id="top">
+    <div class="wrap hero-content">
+      <div class="kicker">Case file 003/Linux malware</div>
+      <h1>CWPdoor<span>Backdoor delivery stager</span></h1>
+      <p class="lede">Technical analysis of a shell-based deployment chain that replaces the Control Web Panel server daemon with a trojanized ELF64 implant, restores the original timestamp, restarts the service, and removes staging artefacts.</p>
+      <div class="hero-meta">
+        <div class="meta"><div class="meta-label">Component</div><div class="meta-value"><code>cwpsrv_update.sh</code></div></div>
+        <div class="meta"><div class="meta-label">Platform</div><div class="meta-value">Linux/Control Web Panel</div></div>
+        <div class="meta"><div class="meta-label">Payload</div><div class="meta-value">ELF64 server implant</div></div>
+        <div class="meta"><div class="meta-label">Published</div><div class="meta-value hot"><time datetime="2026-11-13">13 November 2026</time></div></div>
+      </div>
+    </div>
+  </section>
+
+  <nav class="toc-wrap" aria-label="Report contents">
+    <div class="wrap toc">
+      <a href="#summary">Overview</a><a href="#findings">Findings</a><a href="#profile">Profile</a><a href="#chain">Execution chain</a><a href="#c2">Backdoor operations</a><a href="#technical">Technical flow</a><a href="#evasion">Evasion</a><a href="#iocs">Indicators</a><a href="#attack-chain">Attack chain</a>
+    </div>
+  </nav>
+
+  <main>
+    <section class="section" id="summary">
+      <div class="wrap reveal">
+        <div class="section-head"><div class="section-no">01/Overview</div><h2>Administrative update flow turned into implant delivery.</h2></div>
+        <p class="copy"><code>cwpsrv_update.sh</code> is a Linux deployment stager for CWPdoor. It checks for root execution, inspects the host through <code>/proc</code>, stops the Control Web Panel service, and substitutes <code>/usr/local/cwpsrv/bin/cwpsrv</code> with a trojanized ELF64 server implant.</p>
+        <p class="copy">The replacement daemon provides a passive web backdoor. Instead of maintaining a constant outbound session, it waits inside the web-panel service for specially formed inbound HTTP/HTTPS requests. The installation sequence restores the original modification time and deletes temporary files after restarting the daemon.</p>
+        <div class="callout"><strong>Primary effect:</strong> the malicious binary inherits the path and service lifecycle of the legitimate CWP daemon, allowing the backdoor to start when the normal management service returns online.</div>
+      </div>
+    </section>
+
+    <section class="section" id="findings">
+      <div class="wrap reveal">
+        <div class="section-head"><div class="section-no">02/Findings</div><h2>Five behaviors define the stager.</h2></div>
+        <div class="findings">
+          <article class="finding" data-n="01"><div class="finding-label">Finding 01</div><h3>Root-only deployment</h3><p>The script resolves the current UID and exits when it cannot obtain the privileges needed to replace the CWP daemon.</p></article>
+          <article class="finding" data-n="02"><div class="finding-label">Finding 02</div><h3>Container-aware execution</h3><p>Kernel and init data under <code>/proc</code> are checked for container, Docker, or LXC markers before payload installation.</p></article>
+          <article class="finding" data-n="03"><div class="finding-label">Finding 03</div><h3>Daemon substitution</h3><p>The active <code>cwpsrv</code> service is stopped so its binary can be replaced with the trojanized ELF64 implant.</p></article>
+          <article class="finding" data-n="04"><div class="finding-label">Finding 04</div><h3>Timestamp restoration</h3><p>The original file time is captured before replacement and applied to the malicious binary after installation.</p></article>
+          <article class="finding" data-n="05"><div class="finding-label">Finding 05</div><h3>Passive HTTP activation</h3><p>The implant waits for crafted inbound web requests instead of exposing a continuous outbound callback pattern.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="profile">
+      <div class="wrap reveal">
+        <div class="section-head"><div class="section-no">03/Profile</div><h2>Sample profile</h2></div>
+        <div class="profile">
+          <div class="panel">
+            <h3>Delivery stager</h3>
+            <dl class="profile-list">
+              <div class="profile-row"><dt>Filename</dt><dd>cwpsrv_update.sh</dd></div>
+              <div class="profile-row"><dt>Type</dt><dd>Bash installation/environment stager</dd></div>
+              <div class="profile-row"><dt>Required context</dt><dd>root/UID 0</dd></div>
+              <div class="profile-row"><dt>Target</dt><dd>Linux hosts running Control Web Panel</dd></div>
+              <div class="profile-row"><dt>Target service</dt><dd>cwpsrv</dd></div>
+            </dl>
+            <div class="hashbox"><span>SHA-256</span><code>75be2dbd8104e792ed67cb722a7bce19bb1bd53bac68d5b8d01395a7c59b4602</code></div>
+          </div>
+          <div class="panel">
+            <h3>Installed implant</h3>
+            <dl class="profile-list">
+              <div class="profile-row"><dt>Filename</dt><dd>cwpsrv.suspeito</dd></div>
+              <div class="profile-row"><dt>Format</dt><dd>ELF64 server implant</dd></div>
+              <div class="profile-row"><dt>Installed path</dt><dd>/usr/local/cwpsrv/bin/cwpsrv</dd></div>
+              <div class="profile-row"><dt>Operation</dt><dd>Passive HTTP/HTTPS backdoor</dd></div>
+              <div class="profile-row"><dt>Activation</dt><dd>Specially crafted inbound headers/request data</dd></div>
+            </dl>
+            <div class="hashbox"><span>SHA-256</span><code>2937a4eaa81dbe77e0334b806e06bf65dde68eaea23849bb5da6370c67994266</code></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="chain">
+      <div class="wrap reveal">
+        <div class="section-head"><div class="section-no">04/Execution chain</div><h2>From shell execution to service-backed persistence.</h2></div>
+        <div class="chain">
+          <article class="step"><div class="step-no">01</div><div class="step-body"><h3>Privilege validation</h3><p>The stager calls <code>id</code> and requires root/UID 0 before modifying the protected CWP installation path.</p></div></article>
+          <article class="step"><div class="step-no">02</div><div class="step-body"><h3>Environment inspection</h3><p><code>/proc/sys/kernel/osrelease</code>, <code>/proc/cmdline</code>, and <code>/proc/1/environ</code> expose kernel and container markers used to decide whether execution continues.</p></div></article>
+          <article class="step"><div class="step-no">03</div><div class="step-body"><h3>Service suspension</h3><p>The script suspends the active <code>cwpsrv</code> and <code>cwp-php</code> daemons. The reconstructed flow uses <code>systemctl</code> or the SysV init script to stop <code>cwpsrv</code> before its binary is replaced.</p></div></article>
+          <article class="step"><div class="step-no">04</div><div class="step-body"><h3>Payload retrieval</h3><p><code>curl</code> or <code>wget</code> retrieves the replacement implant from <code>136.0.141[.]71</code> and writes it to a temporary staging path.</p></div></article>
+          <article class="step"><div class="step-no">05</div><div class="step-body"><h3>Binary replacement</h3><p>The original daemon can be copied to <code>cwpsrv.orig</code> before the staged ELF is moved to <code>/usr/local/cwpsrv/bin/cwpsrv</code>, assigned mode <code>0755</code>, and owned by <code>root:root</code>.</p></div></article>
+          <article class="step"><div class="step-no">06</div><div class="step-body"><h3>Timestamp restoration</h3><p>The original modification time is saved with <code>stat</code> and restored with <code>touch -d</code>, reducing obvious timeline differences around the replaced binary.</p></div></article>
+          <article class="step"><div class="step-no">07</div><div class="step-body"><h3>Service restart and cleanup</h3><p>The stager restarts <code>cwpsrv</code>, removes the temporary payload and deletes its own script, leaving the backdoored daemon active at the expected service path.</p></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="c2">
+      <div class="wrap reveal">
+        <div class="section-head"><div class="section-no">05/Backdoor operations</div><h2>Inbound web traffic acts as the trigger.</h2></div>
+        <div class="split">
+          <article class="signal"><h3>Passive request handling</h3><p>CWPdoor operates inside the substituted web-panel daemon. Normal administrative traffic passes without activating the implant; specially formed headers/request content trigger backdoor processing and command execution.</p><div class="packet"><b>CLIENT</b> → HTTPS request → <em>trojanized cwpsrv</em><br>ordinary request → normal panel handling<br>crafted trigger → backdoor command path</div></article>
+          <article class="signal orange"><h3>Resolution and staging</h3><p>The deployment chain uses <code>136.0.141[.]71</code> for payload distribution. The associated resolution flow includes a public resolver at <code>8.8.4[.]4</code>; that address is shared Google infrastructure and is contextual rather than a standalone malicious indicator.</p><div class="packet"><b>STAGER</b> → payload retrieval → <em>136.0.141[.]71</em><br><b>RESOLUTION</b> → public resolver → 8.8.4[.]4<br><b>IMPLANT</b> ← crafted inbound HTTP/HTTPS</div></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="technical">
+      <div class="wrap reveal">
+        <div class="section-head"><div class="section-no">06/Technical flow</div><h2>Reconstructed stager sequence</h2></div>
+        <h3>Environment and privilege gate</h3>
+        <div class="code-panel">
+          <div class="code-head"><span class="code-title">Shell reconstruction/execution gate</span><button class="copy-btn" type="button" onclick="copyCode(this)">Copy</button></div>
+          <pre><code><span class="var">CURRENT_UID</span>=$(id -u 2&gt;/dev/null || whoami)
+if [ "$CURRENT_UID" != "0" ] &amp;&amp; [ "$CURRENT_UID" != "root" ]; then
+    exit 1
+fi
+
+if grep -E -q -a "container=|docker|lxc" /proc/1/environ; then
+    <span class="comment"># stop inside a container-marked environment</span>
+    exit 0
+fi</code></pre>
+        </div>
+
+        <h3>Daemon replacement and timestamp restoration</h3>
+        <div class="code-panel">
+          <div class="code-head"><span class="code-title">Shell reconstruction/replacement sequence</span><button class="copy-btn" type="button" onclick="copyCode(this)">Copy</button></div>
+          <pre><code><span class="var">TARGET_BIN</span>="/usr/local/cwpsrv/bin/cwpsrv"
+<span class="var">TEMP_PAYLOAD</span>="/tmp/.cwpsrv_update"
+
+systemctl stop cwpsrv.service 2&gt;/dev/null || true
+<span class="var">REF_TIMESTAMP</span>=$(stat -c %y "$TARGET_BIN" 2&gt;/dev/null || true)
+cp -p "$TARGET_BIN" "${TARGET_BIN}.orig" 2&gt;/dev/null || true
+mv -f "$TEMP_PAYLOAD" "$TARGET_BIN"
+chmod 0755 "$TARGET_BIN"
+chown root:root "$TARGET_BIN"
+touch -d "$REF_TIMESTAMP" "$TARGET_BIN" 2&gt;/dev/null || true
+systemctl start cwpsrv.service 2&gt;/dev/null || true
+rm -f /tmp/.cwpsrv_update "$0" 2&gt;/dev/null || true</code></pre>
+        </div>
+
+        <div class="tech-grid">
+          <article class="tech"><div class="tech-tag">Filesystem</div><h3>Legitimate path reuse</h3><p>The implant is installed at the established CWP daemon location instead of a new autostart path. Existing service configuration then launches the replacement binary.</p></article>
+          <article class="tech"><div class="tech-tag">Timeline</div><h3>Metadata cloning</h3><p>The original modification time is copied onto the replacement, making a simple directory listing less likely to expose the installation time.</p></article>
+          <article class="tech"><div class="tech-tag">Process lifecycle</div><h3>Controlled stop/start</h3><p>The service is stopped before file replacement and restarted afterwards, avoiding an in-use executable and activating the implant through the normal daemon manager.</p></article>
+          <article class="tech"><div class="tech-tag">Cleanup</div><h3>Transient artefact removal</h3><p>The downloaded temporary payload and installer script are deleted after the replacement service starts.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="evasion">
+      <div class="wrap reveal">
+        <div class="section-head"><div class="section-no">07/Evasion</div><h2>Defense-evasion patterns</h2></div>
+        <div class="tech-grid">
+          <article class="tech"><div class="tech-tag">T1036.004/Masquerading</div><h3>Maintenance-script naming</h3><p><code>cwpsrv_update.sh</code> resembles the naming of legitimate Control Web Panel update activity.</p></article>
+          <article class="tech"><div class="tech-tag">T1070.006/Timestomp</div><h3>Original time restoration</h3><p><code>stat</code> captures the existing daemon timestamp and <code>touch</code> applies it to the replacement binary.</p></article>
+          <article class="tech"><div class="tech-tag">T1070.004/File deletion</div><h3>Installer cleanup</h3><p>Temporary payload data and the executing shell script are removed after the daemon is restarted.</p></article>
+          <article class="tech"><div class="tech-tag">T1033/Account discovery</div><h3>Privilege check</h3><p><code>id</code> verifies that the stager has root privileges before it changes the protected service binary.</p></article>
+          <article class="tech"><div class="tech-tag">Environment checks</div><h3>Container markers</h3><p>The script reads <code>/proc/1/environ</code> and exits when it finds container, Docker, or LXC strings.</p></article>
+          <article class="tech"><div class="tech-tag">T1573/Encrypted channel</div><h3>HTTPS-based resolution</h3><p>Encrypted web requests are used in the associated update-resolution flow, limiting visibility from local plaintext DNS inspection.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="iocs">
+      <div class="wrap reveal">
+        <div class="section-head"><div class="section-no">08/Indicators</div><h2>Indicators of compromise</h2></div>
+        <h3>File indicators</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Type</th><th>Value</th><th>Context</th></tr></thead>
+          <tbody>
+            <tr><td class="ioc-type">SHA-256</td><td><code>75be2dbd8104e792ed67cb722a7bce19bb1bd53bac68d5b8d01395a7c59b4602</code></td><td><code>cwpsrv_update.sh</code> delivery/environment stager</td></tr>
+            <tr><td class="ioc-type">SHA-256</td><td><code>2937a4eaa81dbe77e0334b806e06bf65dde68eaea23849bb5da6370c67994266</code></td><td><code>cwpsrv.suspeito</code> trojanized ELF64 implant</td></tr>
+            <tr><td class="ioc-type">MD5</td><td><code>d3f4e95113d49ab3991b45e457bda75b</code></td><td>Related binary-staging artefact</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Network indicators</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Type</th><th>Value</th><th>Context</th></tr></thead>
+          <tbody>
+            <tr><td class="ioc-type">IPv4</td><td><code>136.0.141[.]71</code></td><td>Payload-hosting/distribution endpoint on Evoxt infrastructure in the Netherlands</td></tr>
+            <tr><td class="ioc-type">IPv4</td><td><code>8.8.4[.]4</code></td><td>Shared Google public resolver used as a fallback resolution endpoint</td></tr>
+          </tbody>
+        </table></div>
+        <p class="note"><strong>Context:</strong> <code>8.8.4[.]4</code> is legitimate shared infrastructure. Its presence alone does not identify a compromised host.</p>
+
+        <h3>Host indicators</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Type</th><th>Value</th><th>Context</th></tr></thead>
+          <tbody>
+            <tr><td class="ioc-type">Filename</td><td><code>cwpsrv_update.sh</code></td><td>Installer/environment stager</td></tr>
+            <tr><td class="ioc-type">Filename</td><td><code>cwpsrv.suspeito</code></td><td>Trojanized ELF64 server implant</td></tr>
+            <tr><td class="ioc-type">Target path</td><td><code>/usr/local/cwpsrv/bin/cwpsrv</code></td><td>Legitimate daemon path replaced by the implant</td></tr>
+            <tr><td class="ioc-type">Staging path</td><td><code>/tmp/.cwpsrv_update</code></td><td>Temporary payload path in the reconstructed flow</td></tr>
+            <tr><td class="ioc-type">Backup path</td><td><code>/usr/local/cwpsrv/bin/cwpsrv.orig</code></td><td>Possible copy of the original daemon</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <section class="section" id="attack-chain">
+      <div class="wrap reveal">
+        <div class="section-head"><div class="section-no">09/Attack chain</div><h2>Deployment sequence</h2></div>
+        <div class="attack-line" aria-label="CWPdoor attack chain">
+          <div class="attack-node"><b>01/Execute</b><span>cwpsrv_update.sh runs as root</span></div><div class="arrow">→</div>
+          <div class="attack-node"><b>02/Inspect</b><span>Kernel/container markers checked</span></div><div class="arrow">→</div>
+          <div class="attack-node"><b>03/Suspend</b><span>cwpsrv service stopped</span></div><div class="arrow">→</div>
+          <div class="attack-node"><b>04/Stage</b><span>ELF implant retrieved</span></div><div class="arrow">→</div>
+          <div class="attack-node"><b>05/Replace</b><span>Daemon swapped and timestomped</span></div><div class="arrow">→</div>
+          <div class="attack-node"><b>06/Activate</b><span>Service restarted</span></div><div class="arrow">→</div>
+          <div class="attack-node"><b>07/Wait</b><span>Passive HTTP trigger monitored</span></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap foot">
+      <span>CWPdoor/Linux backdoor delivery stager</span>
+      <span><a href="../">M3GATR0N research archive</a></span>
+    </div>
+  </footer>
+
+  <script>
+    const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(reduce){document.querySelectorAll('.reveal').forEach(el=>el.classList.add('in'))}
+    else{
+      const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('in');observer.unobserve(entry.target)}}),{threshold:.1});
+      document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+    }
+    function copyCode(button){
+      const text=button.closest('.code-panel').querySelector('pre').innerText;
+      navigator.clipboard.writeText(text).then(()=>{const old=button.textContent;button.textContent='Copied';setTimeout(()=>button.textContent=old,1200)});
+    }
+  </script>
+</body>
+</html>
