@@ -139,17 +139,20 @@
     .case.cwpdoor{grid-column:1/-1;min-height:430px;background:linear-gradient(120deg,rgba(30,20,14,.94),rgba(8,13,11,.98) 68%)}
     .case.cwpdoor::before{border-color:rgba(255,200,87,.16);box-shadow:0 0 0 46px rgba(255,200,87,.035),0 0 0 96px rgba(255,79,100,.018)}
     .case.cwpdoor::after{background:linear-gradient(90deg,transparent,rgba(255,200,87,.1),transparent);animation-delay:3s}
+    .case.badbox{grid-column:1/-1;min-height:430px;background:linear-gradient(120deg,rgba(35,13,17,.95),rgba(8,13,11,.98) 68%)}
+    .case.badbox::before{border-color:rgba(255,79,100,.18);box-shadow:0 0 0 46px rgba(255,79,100,.035),0 0 0 96px rgba(57,231,255,.018)}
+    .case.badbox::after{background:linear-gradient(90deg,transparent,rgba(255,79,100,.11),transparent);animation-delay:4.2s}
     @keyframes caseSweep{0%,24%{left:-45%}55%,100%{left:130%}}
     .case-top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;position:relative;z-index:2}
-    .case-id{font:800 10px/1 var(--mono);letter-spacing:.1em;color:var(--green);text-transform:uppercase}.horus .case-id{color:var(--cyan)}.cwpdoor .case-id{color:var(--amber)}
+    .case-id{font:800 10px/1 var(--mono);letter-spacing:.1em;color:var(--green);text-transform:uppercase}.horus .case-id{color:var(--cyan)}.cwpdoor .case-id{color:var(--amber)}.badbox .case-id{color:var(--red)}
     .badge{border:1px solid var(--line);padding:6px 9px;color:var(--muted);font:700 9px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase}
     .case h3{font:850 clamp(32px,4.5vw,62px)/.98 var(--sans);letter-spacing:-.045em;margin:60px 0 18px;max-width:760px;position:relative;z-index:2}
     .case p{color:#9eb6a9;font-size:15px;max-width:700px;margin:0;position:relative;z-index:2}
     .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin:auto 0 26px;position:relative;z-index:2}
-    .metric{background:rgba(8,13,11,.94);padding:18px}.metric b{display:block;color:var(--green);font:850 24px/1 var(--mono);margin-bottom:8px;text-shadow:0 0 18px rgba(56,255,156,.16)}.metric span{color:var(--muted);font:700 9px/1.3 var(--mono);letter-spacing:.06em;text-transform:uppercase}.horus .metric b{color:var(--cyan);text-shadow:0 0 18px rgba(57,231,255,.16)}.cwpdoor .metric b{color:var(--amber);text-shadow:0 0 18px rgba(255,200,87,.16)}
+    .metric{background:rgba(8,13,11,.94);padding:18px}.metric b{display:block;color:var(--green);font:850 24px/1 var(--mono);margin-bottom:8px;text-shadow:0 0 18px rgba(56,255,156,.16)}.metric span{color:var(--muted);font:700 9px/1.3 var(--mono);letter-spacing:.06em;text-transform:uppercase}.horus .metric b{color:var(--cyan);text-shadow:0 0 18px rgba(57,231,255,.16)}.cwpdoor .metric b{color:var(--amber);text-shadow:0 0 18px rgba(255,200,87,.16)}.badbox .metric b{color:var(--red);text-shadow:0 0 18px rgba(255,79,100,.18)}
     .case-link{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:20px;position:relative;z-index:2;font:800 11px/1 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--text)}
-    .case-link span:last-child{color:var(--green);font-size:18px}.horus .case-link span:last-child{color:var(--cyan)}.cwpdoor .case-link span:last-child{color:var(--amber)}
-    .case-link:hover{color:var(--green)}.horus .case-link:hover{color:var(--cyan)}.cwpdoor .case-link:hover{color:var(--amber)}
+    .case-link span:last-child{color:var(--green);font-size:18px}.horus .case-link span:last-child{color:var(--cyan)}.cwpdoor .case-link span:last-child{color:var(--amber)}.badbox .case-link span:last-child{color:var(--red)}
+    .case-link:hover{color:var(--green)}.horus .case-link:hover{color:var(--cyan)}.cwpdoor .case-link:hover{color:var(--amber)}.badbox .case-link:hover{color:var(--red)}
 
     .manifesto{display:grid;grid-template-columns:.72fr 1.28fr;gap:80px;align-items:start}
     .big-quote{font:800 clamp(30px,4.5vw,58px)/1.12 var(--sans);letter-spacing:-.04em;margin:0}.big-quote em{font-style:normal;color:var(--green)}
@@ -234,11 +237,12 @@
             <span class="term-line"><span class="path">/research/cairn</span> <span class="warn">ACTIVE_AT_DISCOVERY</span></span>
             <span class="term-line"><span class="path">/research/horus</span> <span class="ok">REVERSE_ENGINEERED</span></span>
             <span class="term-line"><span class="path">/research/cwpdoor</span> <span class="warn">LINUX_IMPLANT</span></span>
+            <span class="term-line"><span class="path">/research/badbox3</span> <span class="warn">FIRMWARE_IMPLANT</span></span>
             <span class="term-line"> </span>
             <span class="term-line"><span class="prompt">$</span> <span id="typeTarget"></span><span class="cursor"></span></span>
           </div>
           <div class="term-foot">
-            <div class="term-stat"><b>03</b><span>Public dossiers</span></div>
+            <div class="term-stat"><b>04</b><span>Public dossiers</span></div>
             <div class="term-stat"><b>85+</b><span>CAIRN projects</span></div>
             <div class="term-stat"><b>100%</b><span>Evidence led</span></div>
           </div>
@@ -296,6 +300,18 @@
               <div class="metric"><b>HTTP</b><span>Passive trigger</span></div>
             </div>
             <a class="case-link" href="./cwpdoor/"><span>Open malware analysis</span><span>↗</span></a>
+          </article>
+
+          <article class="case badbox reveal">
+            <div class="case-top"><span class="case-id">Case file//004</span><span class="badge">November 2026</span></div>
+            <h3>BADBOX 3.0</h3>
+            <p>Reverse engineering of an Android firmware implant that activates on selected TV-box hardware, loads encrypted Dalvik modules, falsifies Connected TV advertising telemetry, and registers devices as residential proxy nodes.</p>
+            <div class="metrics">
+              <div class="metric"><b>ARM</b><span>Native firmware engine</span></div>
+              <div class="metric"><b>1200s</b><span>Baseline beacon</span></div>
+              <div class="metric"><b>SOCKS5</b><span>Residential relay</span></div>
+            </div>
+            <a class="case-link" href="./badbox3/"><span>Open firmware analysis</span><span>↗</span></a>
           </article>
         </div>
       </div>
